@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repair log — Authentiqo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span>Authentiqo<small>Digital product passport</small></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#" id="logout-link">Log out</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="dash-header">
+    <div class="top-row">
+      <div>
+        <h2 id="company-name">Repair shop</h2>
+        <p id="company-status">Registered repair shop</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="card card-pad">
+      <h3>Log a repair</h3>
+      <div class="alert alert-error" id="log-alert"></div>
+      <div class="alert alert-success" id="log-success"></div>
+      <form id="repair-form">
+        <div class="field">
+          <label for="r-serial">Device serial number</label>
+          <input type="text" id="r-serial" class="mono" placeholder="e.g. SN-84920-XJ" required>
+        </div>
+        <div class="field">
+          <label for="r-desc">Repair description</label>
+          <textarea id="r-desc" placeholder="What was done, e.g. Replaced battery and screen assembly" required></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="r-location">Repair location</label>
+            <input type="text" id="r-location" placeholder="City, state" required>
+          </div>
+          <div class="field">
+            <label for="r-date">Repair date</label>
+            <input type="date" id="r-date" required>
+          </div>
+        </div>
+        <div class="field">
+          <label>Verification status</label>
+          <div class="radio-group">
+            <label class="radio-pill" id="pill-verified">
+              <input type="radio" name="verification" value="verified" checked> Verified by registered shop
+            </label>
+            <label class="radio-pill" id="pill-self">
+              <input type="radio" name="verification" value="self_reported"> Self-reported
+            </label>
+          </div>
+        </div>
+
+        <div class="form-subsection">
+          <div class="form-subsection-head">
+            <label>Parts used <span class="hint">(optional)</span></label>
+            <button type="button" class="btn btn-outline btn-sm" id="add-part-btn">+ Add a part</button>
+          </div>
+          <div id="parts-rows"></div>
+        </div>
+
+        <div class="form-subsection">
+          <label class="checkbox-row">
+            <input type="checkbox" id="warranty-toggle">
+            This repair includes a warranty or guarantee <span class="hint">(optional)</span>
+          </label>
+          <div id="warranty-fields" class="hidden">
+            <div class="field">
+              <label for="w-desc">Coverage description</label>
+              <input type="text" id="w-desc" placeholder="e.g. 90-day guarantee on screen replacement">
+            </div>
+            <div class="field">
+              <label for="w-end">Coverage ends</label>
+              <input type="date" id="w-end">
+            </div>
+          </div>
+        </div>
+
+        <p class="hint" style="margin-bottom:16px; margin-top:16px;">Once submitted, this entry is permanent and cannot be edited or deleted.</p>
+        <button type="submit" class="btn btn-accent btn-block" id="submit-btn">Stamp repair to device history</button>
+      </form>
+    </div>
+
+    <div class="card card-pad">
+      <div class="panel-title">
+        <h3>Entries you've logged</h3>
+      </div>
+      <div id="table-wrap">
+        <table class="list-table">
+          <thead>
+            <tr><th>Serial</th><th>Description</th><th>Date</th><th>Status</th></tr>
+          </thead>
+          <tbody id="entries-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state hidden" id="entries-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a4 4 0 01-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 015.4-5.4l-2.5 2.5-2-2 2.5-2.5z"/></svg>
+        <p>No repairs logged yet. Your first entry will show up here.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/api.js"></script>
+<script>
+if (!requireAuthOrRedirect('repairman', '/repairman-login.html')) { /* redirected */ }
+
+const meta = Auth.getMeta('repairman') || {};
+document.getElementById('company-name').textContent = meta.companyName || 'Repair shop';
+document.getElementById('company-status').textContent = meta.registeredShop ? 'Registered repair shop' : 'Independent / self-reporting shop';
+
+document.getElementById('logout-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  Auth.logout('repairman');
+  window.location.href = '/repairman-login.html';
+});
+
+document.querySelectorAll('input[name="verification"]').forEach(input => {
+  input.addEventListener('change', () => {
+    document.getElementById('pill-verified').classList.toggle('checked', input.value === 'verified' && input.checked);
+    document.getElementById('pill-self').classList.toggle('checked', input.value === 'self_reported' && input.checked);
+  });
+});
+document.getElementById('pill-verified').classList.add('checked');
+
+// --- Parts used (optional, repeatable rows) ---
+let partRowCount = 0;
+function addPartRow() {
+  partRowCount++;
+  const row = document.createElement('div');
+  row.className = 'part-row';
+  row.dataset.rowId = partRowCount;
+  row.innerHTML = `
+    <input type="text" class="part-name" placeholder="Part, e.g. Battery">
+    <select class="part-status">
+      <option value="genuine">Genuine</option>
+      <option value="aftermarket">Aftermarket</option>
+      <option value="unknown">Unknown</option>
+    </select>
+    <button type="button" class="part-remove" aria-label="Remove part">&times;</button>
+  `;
+  row.querySelector('.part-remove').addEventListener('click', () => row.remove());
+  document.getElementById('parts-rows').appendChild(row);
+}
+document.getElementById('add-part-btn').addEventListener('click', addPartRow);
+
+// --- Warranty (optional, shown when checkbox is ticked) ---
+document.getElementById('warranty-toggle').addEventListener('change', (e) => {
+  document.getElementById('warranty-fields').classList.toggle('hidden', !e.target.checked);
+});
+
+function formatDate(d) {
+  try { return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+  catch { return d; }
+}
+
+async function loadEntries() {
+  try {
+    const data = await apiRequest('/repairs/mine', { role: 'repairman' });
+    const body = document.getElementById('entries-body');
+    const empty = document.getElementById('entries-empty');
+    body.innerHTML = '';
+    if (data.entries.length === 0) {
+      document.getElementById('table-wrap').classList.add('hidden');
+      empty.classList.remove('hidden');
+      return;
+    }
+    document.getElementById('table-wrap').classList.remove('hidden');
+    empty.classList.add('hidden');
+    data.entries.forEach(entry => {
+      const tr = document.createElement('tr');
+      const verified = entry.verification_status === 'verified';
+      tr.innerHTML = `
+        <td class="mono">${entry.serial_number}</td>
+        <td>${entry.description}</td>
+        <td class="mono">${formatDate(entry.repair_date)}</td>
+        <td><span class="badge ${verified ? 'badge-verified' : 'badge-self'}">${verified ? 'Verified' : 'Self-reported'}</span></td>`;
+      body.appendChild(tr);
+    });
+  } catch (err) {
+    if (err.status === 401) { Auth.logout('repairman'); window.location.href = '/repairman-login.html'; }
+  }
+}
+
+document.getElementById('repair-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById('log-alert');
+  const successEl = document.getElementById('log-success');
+  hideAlert(alertEl);
+  hideAlert(successEl);
+
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Stamping…';
+
+  try {
+    const parts = Array.from(document.querySelectorAll('#parts-rows .part-row'))
+      .map(row => ({
+        partName: row.querySelector('.part-name').value.trim(),
+        authenticityStatus: row.querySelector('.part-status').value,
+      }))
+      .filter(p => p.partName);
+
+    const warrantyChecked = document.getElementById('warranty-toggle').checked;
+    const warranty = warrantyChecked
+      ? {
+          coverageDescription: document.getElementById('w-desc').value.trim(),
+          endDate: document.getElementById('w-end').value,
+        }
+      : undefined;
+
+    await apiRequest('/repairs', {
+      method: 'POST',
+      role: 'repairman',
+      body: {
+        serialNumber: document.getElementById('r-serial').value.trim(),
+        description: document.getElementById('r-desc').value.trim(),
+        location: document.getElementById('r-location').value.trim(),
+        repairDate: document.getElementById('r-date').value,
+        verificationStatus: document.querySelector('input[name="verification"]:checked').value,
+        parts,
+        warranty,
+      },
+    });
+    showAlert(successEl, 'Repair stamped to the device history.', 'success');
+    document.getElementById('repair-form').reset();
+    document.getElementById('pill-verified').classList.add('checked');
+    document.getElementById('pill-self').classList.remove('checked');
+    document.getElementById('parts-rows').innerHTML = '';
+    document.getElementById('warranty-fields').classList.add('hidden');
+    loadEntries();
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Stamp repair to device history';
+  }
+});
+
+loadEntries();
+</script>
+</body>
+</html>

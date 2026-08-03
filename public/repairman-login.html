@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repair shop login — Authentiqo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span>Authentiqo<small>Digital product passport</small></span>
+    </a>
+    <nav class="nav-links"><a href="/">Home</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="form-shell">
+    <h1>Repair shop portal</h1>
+    <p class="hero-sub">Log in with your company account to stamp repairs to a device's permanent history.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="login">Log in</button>
+      <button class="tab-btn" data-tab="signup">Create company account</button>
+    </div>
+
+    <div class="card card-pad" id="panel-login">
+      <div class="alert alert-error" id="login-alert"></div>
+      <form id="login-form">
+        <div class="field">
+          <label for="li-email">Company email</label>
+          <input type="email" id="li-email" placeholder="repairs@yourcompany.com" required>
+        </div>
+        <div class="field">
+          <label for="li-password">Password</label>
+          <input type="password" id="li-password" required>
+        </div>
+        <button type="submit" class="btn btn-accent btn-block">
+          <span class="btn-text">Log in</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="card card-pad hidden" id="panel-signup">
+      <div class="alert alert-error" id="signup-alert"></div>
+      <form id="signup-form">
+        <div class="field">
+          <label for="su-company">Company name</label>
+          <input type="text" id="su-company" placeholder="Northside Device Repair" required>
+        </div>
+        <div class="field">
+          <label for="su-email">Company email</label>
+          <input type="email" id="su-email" placeholder="repairs@yourcompany.com" required>
+        </div>
+        <div class="field">
+          <label for="su-username">Username</label>
+          <input type="text" id="su-username" placeholder="How your entries will be labeled" required>
+        </div>
+        <div class="field">
+          <label for="su-password">Password</label>
+          <input type="password" id="su-password" minlength="8" required>
+          <div class="hint">At least 8 characters.</div>
+        </div>
+        <div class="field">
+          <label>Shop status</label>
+          <div class="radio-group">
+            <label class="radio-pill" id="pill-registered">
+              <input type="radio" name="shopStatus" value="registered" checked> Registered repair shop
+            </label>
+            <label class="radio-pill" id="pill-independent">
+              <input type="radio" name="shopStatus" value="independent"> Independent / self-reporting
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-accent btn-block">
+          <span class="btn-text">Create account</span>
+        </button>
+      </form>
+    </div>
+
+    <p class="form-footer-link">Registering as a seller instead? <a href="/seller-login.html">Go to seller login</a></p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a href="/" class="brand">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>Authentiqo</span>
+      </a>
+      <p class="footer-desc">Digital product passports for electronics — logging repair and ownership history from manufacture to resale.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/buyer.html">Verify a device</a>
+      <a href="/repairman-login.html">Repair shops</a>
+      <a href="/seller-login.html">Sellers</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/about.html">About</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© <span id="year"></span> Authentiqo</span>
+    <span>Trust Scores are algorithmic estimates, not guarantees.</span>
+  </div>
+</footer>
+
+<script src="/js/api.js"></script>
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = { login: document.getElementById('panel-login'), signup: document.getElementById('panel-signup') };
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    Object.values(panels).forEach(p => p.classList.add('hidden'));
+    panels[tab.dataset.tab].classList.remove('hidden');
+  });
+});
+
+document.querySelectorAll('input[name="shopStatus"]').forEach(input => {
+  input.addEventListener('change', () => {
+    document.getElementById('pill-registered').classList.toggle('checked', input.value === 'registered' && input.checked);
+    document.getElementById('pill-independent').classList.toggle('checked', input.value === 'independent' && input.checked);
+  });
+});
+document.getElementById('pill-registered').classList.add('checked');
+
+if (Auth.getToken('repairman')) window.location.href = '/repairman-dashboard.html';
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById('login-alert');
+  hideAlert(alertEl);
+  try {
+    const data = await apiRequest('/auth/repairman/login', {
+      method: 'POST',
+      body: {
+        companyEmail: document.getElementById('li-email').value.trim(),
+        password: document.getElementById('li-password').value,
+      },
+    });
+    Auth.setToken('repairman', data.token, { companyName: data.companyName, registeredShop: data.registeredShop });
+    window.location.href = '/repairman-dashboard.html';
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  }
+});
+
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById('signup-alert');
+  hideAlert(alertEl);
+  try {
+    const data = await apiRequest('/auth/repairman/signup', {
+      method: 'POST',
+      body: {
+        companyName: document.getElementById('su-company').value.trim(),
+        companyEmail: document.getElementById('su-email').value.trim(),
+        username: document.getElementById('su-username').value.trim(),
+        password: document.getElementById('su-password').value,
+        registeredShop: document.querySelector('input[name="shopStatus"]:checked').value === 'registered',
+      },
+    });
+    Auth.setToken('repairman', data.token, { companyName: data.companyName, registeredShop: data.registeredShop });
+    window.location.href = '/repairman-dashboard.html';
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  }
+});
+</script>
+</body>
+</html>

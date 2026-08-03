@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify a device — Authentiqo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span>Authentiqo<small>Digital product passport</small></span>
+    </a>
+    <nav class="nav-links">
+      <a href="/repairman-login.html">Repair shops</a>
+      <a href="/seller-login.html">Sellers</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="lookup-shell">
+    <h1 class="text-center">Verify a device</h1>
+    <p class="hero-sub text-center">Scan the QR code on the listing, or enter the device's serial number.</p>
+
+    <div class="lookup-tabs">
+      <button class="lookup-tab active" data-tab="scan">Scan QR code</button>
+      <button class="lookup-tab" data-tab="serial">Enter serial number</button>
+    </div>
+
+    <div class="card card-pad" id="panel-scan">
+      <div id="qr-reader"></div>
+      <p class="hint text-center" style="margin-top:14px;">Allow camera access, then point it at the device's QR code.</p>
+      <div class="text-center" style="margin-top:16px;">
+        <button type="button" class="btn btn-outline" id="upload-qr-btn">Upload QR code image</button>
+        <input type="file" id="upload-qr-input" accept="image/*" style="display:none;">
+      </div>
+      <div class="alert alert-error" id="upload-qr-alert" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card card-pad hidden" id="panel-serial">
+      <div class="alert alert-error" id="serial-alert"></div>
+      <form id="serial-form">
+        <div class="field">
+          <label for="serial">Serial number</label>
+          <input type="text" id="serial" class="mono" placeholder="e.g. SN-84920-XJ" required>
+        </div>
+        <button type="submit" class="btn btn-accent btn-block" id="serial-submit">Look up device</button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a href="/" class="brand">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>Authentiqo</span>
+      </a>
+      <p class="footer-desc">Digital product passports for electronics — logging repair and ownership history from manufacture to resale.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/buyer.html">Verify a device</a>
+      <a href="/repairman-login.html">Repair shops</a>
+      <a href="/seller-login.html">Sellers</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/about.html">About</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© <span id="year"></span> Authentiqo</span>
+    <span>Trust Scores are algorithmic estimates, not guarantees.</span>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="/js/api.js"></script>
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+const tabs = document.querySelectorAll('.lookup-tab');
+const panels = { scan: document.getElementById('panel-scan'), serial: document.getElementById('panel-serial') };
+let scanner = null;
+
+function goToDevice(serialOrUrl) {
+  try {
+    // If the QR encoded a full device URL, extract just the serial from the path
+    const maybeUrl = new URL(serialOrUrl, window.location.origin);
+    const parts = maybeUrl.pathname.split('/device/');
+    if (parts.length === 2 && parts[1]) {
+      window.location.href = `/device/${parts[1]}`;
+      return;
+    }
+  } catch { /* not a URL, fall through and treat as a raw serial number */ }
+  window.location.href = `/device/${encodeURIComponent(serialOrUrl.trim())}`;
+}
+
+function startScanner() {
+  if (scanner) return;
+  scanner = new Html5Qrcode('qr-reader');
+  scanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: 240 },
+    (decodedText) => {
+      scanner.stop().catch(() => {});
+      goToDevice(decodedText);
+    },
+    () => {}
+  ).catch(() => {
+    document.getElementById('qr-reader').innerHTML =
+      '<p style="padding:24px;text-align:center;color:var(--text-faint)">Camera unavailable. Use "Enter serial number" instead.</p>';
+  });
+}
+
+function stopScanner() {
+  if (scanner) {
+    scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(() => {});
+  }
+}
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    Object.values(panels).forEach(p => p.classList.add('hidden'));
+    panels[tab.dataset.tab].classList.remove('hidden');
+    if (tab.dataset.tab === 'scan') startScanner(); else stopScanner();
+  });
+});
+
+startScanner();
+
+// "Upload QR code image" — lets a buyer pick a photo from their gallery/files
+// instead of using the live camera, then decodes the QR code out of it.
+document.getElementById('upload-qr-btn').addEventListener('click', () => {
+  document.getElementById('upload-qr-input').click();
+});
+
+document.getElementById('upload-qr-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  const alertEl = document.getElementById('upload-qr-alert');
+  hideAlert(alertEl);
+  if (!file) return;
+
+  try {
+    // Html5Qrcode can decode a QR code straight out of an image file, reusing
+    // the same '#qr-reader' element the live camera scanner uses.
+    const fileScanner = new Html5Qrcode('qr-reader');
+    const decodedText = await fileScanner.scanFile(file, true);
+    goToDevice(decodedText);
+  } catch (err) {
+    showAlert(alertEl, 'Could not find a QR code in that image. Try a clearer photo, or enter the serial number instead.');
+  } finally {
+    e.target.value = ''; // allow re-selecting the same file again later
+  }
+});
+
+document.getElementById('serial-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const serial = document.getElementById('serial').value.trim();
+  const alertEl = document.getElementById('serial-alert');
+  hideAlert(alertEl);
+  if (!serial) {
+    showAlert(alertEl, 'Enter a serial number to continue.');
+    return;
+  }
+  goToDevice(serial);
+});
+</script>
+</body>
+</html>

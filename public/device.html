@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Device history — Authentiqo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span>Authentiqo<small>Digital product passport</small></span>
+    </a>
+    <nav class="nav-links">
+      <a href="/buyer.html">Verify another device</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="device-shell">
+
+    <div id="loading-state" class="text-center" style="padding:80px 0;color:var(--text-faint);">Looking up device…</div>
+
+    <div id="error-state" class="card card-pad text-center hidden" style="margin-top:40px;">
+      <h3>We couldn't find that device</h3>
+      <p id="error-message">Double-check the serial number and try again.</p>
+      <a href="/buyer.html" class="btn btn-outline">Try another lookup</a>
+    </div>
+
+    <div id="result-state" class="hidden">
+      <div class="card card-pad device-header-card">
+        <div class="passport-stamp" id="passport-stamp">
+          <svg viewBox="0 0 62 62" fill="none">
+            <circle cx="31" cy="31" r="28" stroke="#0F2942" stroke-width="1.5"/>
+            <circle cx="31" cy="31" r="22" stroke="#0F2942" stroke-width="1"/>
+            <text x="31" y="27" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="9" fill="#0F2942">PASSPORT</text>
+            <text x="31" y="39" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="10" fill="#0F2942" id="stamp-year">–</text>
+          </svg>
+        </div>
+        <div class="device-id">
+          <div class="serial mono" id="d-serial"></div>
+          <div class="kind" id="d-kind"></div>
+        </div>
+        <div class="trust-ring-wrap">
+          <div class="trust-ring">
+            <svg width="92" height="92" viewBox="0 0 92 92">
+              <circle class="ring-bg" cx="46" cy="46" r="40"></circle>
+              <circle class="ring-val" id="ring-val" cx="46" cy="46" r="40" stroke="#2D6CDF" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+            </svg>
+            <div class="ring-label">
+              <span class="num" id="d-score">–</span>
+              <span class="denom">/ 100</span>
+            </div>
+          </div>
+          <div>
+            <p class="trust-band">Trust Score: <span class="band-word" id="d-band">–</span></p>
+            <p style="font-size:0.8rem;margin:0;">Owner #<span id="d-owners"></span> on record</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px;">
+        <h3>What drives this score</h3>
+        <ul class="factor-list" id="factor-list"></ul>
+        <p class="disclaimer">Trust Scores are algorithmic estimates based on logged repair and ownership data. They are not guarantees of a device's condition, authenticity, or value.</p>
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px;">
+        <h3>Repair confidence</h3>
+        <div class="confidence-row">
+          <div class="confidence-ring-wrap">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle class="confidence-ring-bg" cx="50" cy="50" r="42"></circle>
+              <circle class="confidence-ring-val" id="confidence-ring" cx="50" cy="50" r="42" stroke="#2D6CDF" stroke-dasharray="264" stroke-dashoffset="264"></circle>
+            </svg>
+            <div class="confidence-label">
+              <span class="num" id="confidence-score">–</span>
+              <span class="band" id="confidence-band"></span>
+            </div>
+          </div>
+          <ul class="confidence-factors" id="confidence-factors"></ul>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px;">
+        <h3>Device health timeline</h3>
+        <div id="health-timeline" class="health-timeline"></div>
+        <div id="no-history" class="empty-state hidden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a4 4 0 01-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 015.4-5.4l-2.5 2.5-2-2 2.5-2.5z"/></svg>
+          <p>No repairs have been logged for this device yet.</p>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px;">
+        <h3>Parts authenticity</h3>
+        <div class="detail-list" id="parts-list"></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px;">
+        <h3>Warranty &amp; service coverage</h3>
+        <div class="detail-list" id="warranty-list"></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:20px;">
+        <h3>How this device compares</h3>
+        <table class="comparison-table" id="comparison-table">
+          <thead>
+            <tr><th>Metric</th><th>This device</th><th>Market average</th></tr>
+          </thead>
+          <tbody id="comparison-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card card-pad" id="recommendation-card" style="margin-top:20px; text-align:center;">
+        <p class="hint" style="margin-bottom:8px;">Should you buy it?</p>
+        <div id="recommendation-label" style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.5rem; margin-bottom:6px;"></div>
+        <p id="recommendation-detail" style="color:var(--text-mute); margin:0;"></p>
+        <p class="hint" style="margin-top:16px;">Based on the Trust Score alone — always inspect the device and check local pricing too.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a href="/" class="brand">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>Authentiqo</span>
+      </a>
+      <p class="footer-desc">Digital product passports for electronics — logging repair and ownership history from manufacture to resale.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/buyer.html">Verify a device</a>
+      <a href="/repairman-login.html">Repair shops</a>
+      <a href="/seller-login.html">Sellers</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/about.html">About</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© <span id="year"></span> Authentiqo</span>
+    <span>Trust Scores are algorithmic estimates, not guarantees.</span>
+  </div>
+</footer>
+
+<script src="/js/api.js"></script>
+<script src="/js/reveal.js"></script>
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+const CIRC = 2 * Math.PI * 40;
+
+function bandColor(band) {
+  if (band === 'high') return '#158F6B';
+  if (band === 'low') return '#C0392B';
+  return '#C98A1F';
+}
+
+function renderRecommendation(score) {
+  const labelEl = document.getElementById('recommendation-label');
+  const detailEl = document.getElementById('recommendation-detail');
+  let text, detail, color;
+
+  if (score <= 30) {
+    text = 'Not recommended';
+    detail = 'This device\'s history raises enough concerns that we wouldn\'t recommend buying it as-is.';
+    color = 'var(--danger)';
+  } else if (score <= 60) {
+    text = 'Buy if the price is reasonable';
+    detail = 'The history here is thin or mixed. It can still be a fair buy, but only at a price that reflects that uncertainty.';
+    color = 'var(--caution)';
+  } else if (score <= 80) {
+    text = 'Decent';
+    detail = 'This device has a reasonably solid track record. Worth considering at a fair market price.';
+    color = 'var(--action)';
+  } else {
+    text = 'Go ahead';
+    detail = 'This device has a strong, well-documented history. A confident buy from a trust-history standpoint.';
+    color = 'var(--verified)';
+  }
+
+  labelEl.textContent = text;
+  labelEl.style.color = color;
+  detailEl.textContent = detail;
+}
+
+function verifiedIcon() {
+  return '<svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function selfIcon() {
+  return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="1.4" fill="currentColor"/><path d="M12 8v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+}
+
+function formatDate(d) {
+  try { return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+  catch { return d; }
+}
+
+async function loadDevice() {
+  const serial = decodeURIComponent(window.location.pathname.split('/device/')[1] || '');
+  const loading = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const resultState = document.getElementById('result-state');
+
+  try {
+    const data = await apiRequest(`/device-lookup/${encodeURIComponent(serial)}`);
+    loading.classList.add('hidden');
+    resultState.classList.remove('hidden');
+
+    document.getElementById('d-serial').textContent = data.device.serialNumber;
+    const kindParts = [data.device.brand, data.device.model, data.device.deviceType].filter(Boolean);
+    document.getElementById('d-kind').textContent = kindParts.length ? kindParts.join(' · ') : 'Device type not specified';
+    document.getElementById('d-owners').textContent = data.device.ownershipTransferCount;
+
+    const score = data.trustScore.score;
+    document.getElementById('d-score').textContent = score;
+    document.getElementById('d-band').textContent = data.trustScore.band;
+    const ring = document.getElementById('ring-val');
+    ring.setAttribute('stroke', bandColor(data.trustScore.band));
+    ring.style.strokeDashoffset = CIRC - (CIRC * score) / 100;
+
+    renderRecommendation(score);
+
+    const factorList = document.getElementById('factor-list');
+    factorList.innerHTML = '';
+    data.trustScore.factors.forEach(f => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="factor-dot ${f.effect}"></span><span>${f.label}</span>`;
+      factorList.appendChild(li);
+    });
+
+    // --- Passport Stamp ---
+    const manufactured = data.device.manufacturedDate || data.device.createdAt;
+    document.getElementById('stamp-year').textContent = manufactured ? new Date(manufactured).getFullYear() : '–';
+    observeOnce(document.getElementById('passport-stamp'), () => {
+      document.getElementById('passport-stamp').classList.add('is-visible');
+    });
+
+    // --- Repair Confidence Meter ---
+    const CIRC_CONF = 2 * Math.PI * 42;
+    const confRing = document.getElementById('confidence-ring');
+    document.getElementById('confidence-score').textContent = data.confidence.score;
+    document.getElementById('confidence-band').textContent = data.confidence.band;
+    const confColor = data.confidence.score >= 75 ? '#158F6B' : data.confidence.score >= 40 ? '#C98A1F' : '#C0392B';
+    confRing.setAttribute('stroke', confColor);
+    observeOnce(confRing, () => {
+      confRing.style.strokeDashoffset = CIRC_CONF - (CIRC_CONF * data.confidence.score) / 100;
+    });
+    const confList = document.getElementById('confidence-factors');
+    confList.innerHTML = '';
+    data.confidence.factors.forEach(f => {
+      const li = document.createElement('li');
+      li.className = f.ok ? 'ok' : 'missing';
+      li.innerHTML = `${f.ok ? verifiedIcon() : missingIcon()}<span>${f.label}</span>`;
+      confList.appendChild(li);
+    });
+
+    // --- Device Health Timeline (repairs + ownership events, merged and sorted) ---
+    const timelineEl = document.getElementById('health-timeline');
+    const noHistory = document.getElementById('no-history');
+    timelineEl.innerHTML = '';
+
+    const events = [];
+    data.repairHistory.forEach(r => events.push({ type: 'repair', date: r.repair_date, data: r }));
+    data.ownershipHistory.forEach(o => events.push({ type: 'ownership', date: o.transferred_at, data: o }));
+    events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (events.length === 0) {
+      noHistory.classList.remove('hidden');
+    } else {
+      events.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+
+        if (ev.type === 'repair') {
+          const r = ev.data;
+          const verified = r.verification_status === 'verified';
+          let ratingHtml = '';
+          if (r.rating) {
+            ratingHtml = `<div class="rating-line">${starHtml(r.rating.average)} ${r.rating.average} avg (${r.rating.count} rating${r.rating.count === 1 ? '' : 's'})</div>`;
+          }
+          item.innerHTML = `
+            <span class="timeline-dot ${verified ? 'dot-verified' : 'dot-self'}"></span>
+            <div class="timeline-date mono">${formatDate(r.repair_date)}</div>
+            <div class="timeline-title">${r.description}</div>
+            <p class="timeline-meta"><span class="badge ${verified ? 'badge-verified' : 'badge-self'}">${verified ? 'Verified' : 'Self-reported'}</span> ${r.repair_company_id ? `<a href="/repair-shop/${r.repair_company_id}">${r.company_name || 'Repair shop'}</a>` : (r.company_name || '')} · ${r.location || ''}</p>
+            ${ratingHtml}
+            ${riskAlertHtml(r.riskAlert)}
+          `;
+        } else {
+          const o = ev.data;
+          const isDeclared = o.source === 'seller_declared';
+          item.innerHTML = `
+            <span class="timeline-dot ${isDeclared ? 'dot-self' : 'dot-structural'}"></span>
+            <div class="timeline-date mono">${formatDate(o.transferred_at)}</div>
+            <div class="timeline-title">Ownership transferred (owner #${o.new_owner_number})</div>
+            ${isDeclared ? '<p class="timeline-meta"><span class="badge badge-self">Reported by seller</span> Pre-dates this device\'s Authentiqo registration</p>' : ''}
+            ${riskAlertHtml(o.riskAlert)}
+          `;
+        }
+        timelineEl.appendChild(item);
+      });
+    }
+
+    // --- Parts Authenticity ---
+    const partsList = document.getElementById('parts-list');
+    partsList.innerHTML = '';
+    if (data.parts.length === 0) {
+      partsList.innerHTML = '<p class="empty-line">No parts authenticity data logged for this device yet.</p>';
+    } else {
+      data.parts.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'detail-row';
+        const statusLabel = p.authenticity_status.charAt(0).toUpperCase() + p.authenticity_status.slice(1);
+        row.innerHTML = `
+          <div class="detail-main"><span class="status-dot ${p.authenticity_status}"></span><span class="detail-name">${p.part_name}</span></div>
+          <span class="badge ${p.authenticity_status === 'genuine' ? 'badge-verified' : p.authenticity_status === 'aftermarket' ? 'badge-self' : 'badge-neutral'}">${statusLabel}</span>
+        `;
+        partsList.appendChild(row);
+      });
+    }
+
+    // --- Warranty & Service Coverage ---
+    const warrantyList = document.getElementById('warranty-list');
+    warrantyList.innerHTML = '';
+    if (data.warranties.length === 0) {
+      warrantyList.innerHTML = '<p class="empty-line">No warranty or service records logged for this device yet.</p>';
+    } else {
+      data.warranties.forEach(w => {
+        const row = document.createElement('div');
+        row.className = 'detail-row';
+        const typeLabel = w.warranty_type === 'manufacturer' ? 'Manufacturer Warranty' : w.warranty_type === 'repair_shop' ? 'Repair Shop Guarantee' : 'Extended Warranty';
+        row.innerHTML = `
+          <div class="detail-main">
+            <span class="status-dot ${w.status}"></span>
+            <div>
+              <div class="detail-name">${typeLabel}</div>
+              <p class="detail-sub">${w.coverage_description || ''}</p>
+            </div>
+          </div>
+          <span class="badge ${w.status === 'active' ? 'badge-verified' : 'badge-neutral'}">${w.status === 'active' ? 'Active' : 'Expired'}</span>
+        `;
+        warrantyList.appendChild(row);
+      });
+    }
+
+    // --- Device Comparison (separate request, non-blocking) ---
+    apiRequest(`/device-lookup/${encodeURIComponent(serial)}/comparison`).then(cmp => {
+      const body = document.getElementById('comparison-body');
+      body.innerHTML = '';
+      cmp.metrics.forEach(m => {
+        const tr = document.createElement('tr');
+        let dotClass = 'even';
+        if (m.marketAverage !== null && m.thisDevice !== null) {
+          if (m.thisDevice > m.marketAverage) dotClass = 'better';
+          else if (m.thisDevice < m.marketAverage) dotClass = 'worse';
+        }
+        tr.innerHTML = `
+          <td><span class="comparison-dot ${dotClass}"></span>${m.label}</td>
+          <td class="this-device">${m.thisDevice ?? '–'}</td>
+          <td class="market-avg">${m.marketAverage ?? '–'}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }).catch(() => { /* comparison is supplementary; ignore failures */ });
+
+  } catch (err) {
+    loading.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    document.getElementById('error-message').textContent = err.message || 'Double-check the serial number and try again.';
+  }
+}
+
+function missingIcon() {
+  return '<svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 16.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10.3 3.9L2.6 17a1.6 1.6 0 001.4 2.4h16a1.6 1.6 0 001.4-2.4L13.7 3.9a1.6 1.6 0 00-2.8 0z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+}
+
+function starHtml(average) {
+  let out = '<span class="rating-stars">';
+  for (let i = 1; i <= 5; i++) {
+    const filled = i <= Math.round(average);
+    out += `<svg class="${filled ? 'filled' : 'empty'}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1z"/></svg>`;
+  }
+  out += '</span>';
+  return out;
+}
+
+function riskAlertHtml(risk) {
+  if (!risk) return '';
+  const warnIcon = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 16.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10.3 3.9L2.6 17a1.6 1.6 0 001.4 2.4h16a1.6 1.6 0 001.4-2.4L13.7 3.9a1.6 1.6 0 00-2.8 0z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  return `
+    <div class="timeline-risk ${risk.severity === 'high' ? 'severity-high' : ''}">
+      ${warnIcon}
+      <p><strong>${risk.title}</strong>${risk.explanation}</p>
+    </div>`;
+}
+
+loadDevice();
+</script>
+</body>
+</html>

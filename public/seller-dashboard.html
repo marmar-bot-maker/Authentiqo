@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller dashboard — Authentiqo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="/" class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5l-8-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span>Authentiqo<small>Digital product passport</small></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#" id="logout-link">Log out</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="dash-header">
+    <div class="top-row">
+      <div>
+        <h2 id="seller-name">Seller</h2>
+        <p>Register devices, review ownership history, and generate QR codes for listings.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Devices registered</div>
+      <div class="stat-value" id="stat-devices">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total repair entries on file</div>
+      <div class="stat-value" id="stat-repairs">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg. ownership transfers</div>
+      <div class="stat-value" id="stat-owners">–</div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="card card-pad">
+      <h3>Register a device</h3>
+      <p class="hint" style="margin-bottom:16px;">
+        Already registered by someone else? Enter the same serial number under your own
+        account and ownership transfers to you automatically — no separate "transfer" step needed.
+      </p>
+      <div class="alert alert-error" id="reg-alert"></div>
+      <div class="alert alert-success" id="reg-success"></div>
+      <form id="register-form">
+        <div class="field">
+          <label for="d-serial">Serial number</label>
+          <input type="text" id="d-serial" class="mono" placeholder="e.g. SN-84920-XJ" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="d-brand">Brand</label>
+            <input type="text" id="d-brand" placeholder="e.g. Aster">
+          </div>
+          <div class="field">
+            <label for="d-model">Model</label>
+            <input type="text" id="d-model" placeholder="e.g. Slate 14">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="d-type">Device type</label>
+            <input type="text" id="d-type" placeholder="e.g. Laptop">
+          </div>
+          <div class="field">
+            <label for="d-mfg">Manufactured date</label>
+            <input type="date" id="d-mfg">
+          </div>
+        </div>
+        <p class="hint" style="margin-bottom:16px;">Repair history is pulled in automatically from repairman records — you can't add or edit it here.</p>
+        <button type="submit" class="btn btn-accent btn-block" id="register-btn">Register device</button>
+      </form>
+    </div>
+
+    <div class="card card-pad">
+      <div class="panel-title">
+        <h3>Your devices</h3>
+      </div>
+      <div id="table-wrap">
+        <table class="list-table">
+          <thead>
+            <tr><th>Serial</th><th>Device</th><th>Owners</th><th></th></tr>
+          </thead>
+          <tbody id="devices-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state hidden" id="devices-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 01-1 1H5a1 1 0 01-1-1V9z"/></svg>
+        <p>No devices registered yet. Add one to generate its first QR code.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="qr-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,41,66,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+  <div class="card card-pad qr-panel" style="max-width:340px;width:100%;">
+    <h3 id="qr-serial" class="mono"></h3>
+    <img id="qr-image" width="240" height="240" alt="QR code for device verification">
+    <p class="hint" id="qr-url" style="word-break:break-all;"></p>
+    <button class="btn btn-outline btn-block" id="qr-close">Close</button>
+  </div>
+</div>
+
+<div id="transfer-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,41,66,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+  <div class="card card-pad" style="max-width:400px;width:100%;">
+    <h3>Transfer ownership</h3>
+    <p style="color:var(--text-mute); font-size:0.92rem; margin-bottom:16px;">
+      Authentiqo doesn't collect buyer contact details, so a transfer isn't a button you click here —
+      it happens the moment the new owner registers this same serial number under their own account.
+    </p>
+    <ol style="margin:0 0 16px; padding-left:20px; font-size:0.9rem; color:var(--text);">
+      <li style="margin-bottom:8px;">Give the new owner this serial number: <strong id="transfer-serial" class="mono"></strong></li>
+      <li style="margin-bottom:8px;">They create a free seller account at <span class="mono">/seller-login.html</span></li>
+      <li>They enter that serial number under "Register a device" — ownership transfers to them automatically, and this device drops off your list.</li>
+    </ol>
+    <button class="btn btn-accent btn-block" id="transfer-copy">Copy serial number</button>
+    <button class="btn btn-outline btn-block" id="transfer-close" style="margin-top:8px;">Close</button>
+  </div>
+</div>
+
+<div id="addowners-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,41,66,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+  <div class="card card-pad" style="max-width:380px;width:100%;">
+    <h3>Add previous owners</h3>
+    <p style="color:var(--text-mute); font-size:0.92rem; margin-bottom:16px;">
+      If this device changed hands before it was ever registered on Authentiqo — say, sold privately a
+      couple of times — add that history here. This only adds to the recorded owner count; it can never
+      remove or edit anything already on file, and it's shown to buyers as reported by the seller, not a
+      platform-verified transfer.
+    </p>
+    <div class="alert alert-error" id="addowners-alert"></div>
+    <div class="field">
+      <label for="addowners-count">How many additional owners?</label>
+      <input type="number" id="addowners-count" min="1" max="20" step="1" placeholder="e.g. 2">
+    </div>
+    <input type="hidden" id="addowners-serial">
+    <button class="btn btn-accent btn-block" id="addowners-submit">Add to ownership history</button>
+    <button class="btn btn-outline btn-block" id="addowners-close" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<div id="release-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,41,66,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+  <div class="card card-pad" style="max-width:380px;width:100%;">
+    <h3>Give up ownership</h3>
+    <p style="color:var(--text-mute); font-size:0.92rem; margin-bottom:16px;">
+      Use this if you bought this device and have no plans to resell it, or if you no longer
+      have it. It disappears from your device list. Nothing about its repair or ownership
+      history is deleted — it's all still visible to buyers exactly as it is now. Anyone with
+      the serial number (you again, or whoever gets it next) can register it in the future.
+    </p>
+    <div class="alert alert-error" id="release-alert"></div>
+    <input type="hidden" id="release-serial">
+    <button class="btn btn-accent btn-block" id="release-confirm" style="background:var(--danger);">Yes, give up ownership</button>
+    <button class="btn btn-outline btn-block" id="release-close" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+if (!requireAuthOrRedirect('seller', '/seller-login.html')) { /* redirected */ }
+
+const meta = Auth.getMeta('seller') || {};
+document.getElementById('seller-name').textContent = meta.displayName || 'Seller';
+
+document.getElementById('logout-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  Auth.logout('seller');
+  window.location.href = '/seller-login.html';
+});
+
+async function loadDevices() {
+  try {
+    const data = await apiRequest('/devices/mine', { role: 'seller' });
+    const body = document.getElementById('devices-body');
+    const empty = document.getElementById('devices-empty');
+    body.innerHTML = '';
+
+    document.getElementById('stat-devices').textContent = data.devices.length;
+    const avgOwners = data.devices.length
+      ? (data.devices.reduce((sum, d) => sum + d.ownership_transfer_count, 0) / data.devices.length).toFixed(1)
+      : '0';
+    document.getElementById('stat-owners').textContent = avgOwners;
+
+    if (data.devices.length === 0) {
+      document.getElementById('table-wrap').classList.add('hidden');
+      empty.classList.remove('hidden');
+      document.getElementById('stat-repairs').textContent = '0';
+      return;
+    }
+    document.getElementById('table-wrap').classList.remove('hidden');
+    empty.classList.add('hidden');
+
+    let repairTotal = 0;
+    for (const device of data.devices) {
+      repairTotal += device.repair_count || 0;
+      const tr = document.createElement('tr');
+      const kind = [device.brand, device.model].filter(Boolean).join(' ') || '—';
+      tr.innerHTML = `
+        <td class="mono">${device.serial_number}</td>
+        <td>${kind}</td>
+        <td>${device.ownership_transfer_count}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" data-serial="${device.serial_number}">Get QR code</button>
+          <button class="btn btn-sm btn-ghost" data-transfer-serial="${device.serial_number}">Transfer ownership</button>
+          <button class="btn btn-sm btn-ghost" data-addowners-serial="${device.serial_number}">Add previous owners</button>
+          <button class="btn btn-sm btn-ghost" data-release-serial="${device.serial_number}" style="color:var(--danger);">Give up ownership</button>
+        </td>`;
+      body.appendChild(tr);
+    }
+    document.getElementById('stat-repairs').textContent = repairTotal;
+
+    document.querySelectorAll('[data-serial]').forEach(btn => {
+      btn.addEventListener('click', () => showQr(btn.dataset.serial));
+    });
+    document.querySelectorAll('[data-transfer-serial]').forEach(btn => {
+      btn.addEventListener('click', () => showTransfer(btn.dataset.transferSerial));
+    });
+    document.querySelectorAll('[data-addowners-serial]').forEach(btn => {
+      btn.addEventListener('click', () => showAddOwners(btn.dataset.addownersSerial));
+    });
+    document.querySelectorAll('[data-release-serial]').forEach(btn => {
+      btn.addEventListener('click', () => showRelease(btn.dataset.releaseSerial));
+    });
+  } catch (err) {
+    if (err.status === 401) { Auth.logout('seller'); window.location.href = '/seller-login.html'; }
+  }
+}
+
+async function showQr(serial) {
+  try {
+    const data = await apiRequest(`/devices/${encodeURIComponent(serial)}/qrcode`, { role: 'seller' });
+    document.getElementById('qr-serial').textContent = serial;
+    document.getElementById('qr-image').src = data.qr.dataUrl;
+    document.getElementById('qr-url').textContent = data.qr.url;
+    document.getElementById('qr-modal').classList.remove('hidden');
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById('qr-close').addEventListener('click', () => {
+  document.getElementById('qr-modal').classList.add('hidden');
+});
+
+function showTransfer(serial) {
+  document.getElementById('transfer-serial').textContent = serial;
+  document.getElementById('transfer-modal').classList.remove('hidden');
+}
+
+document.getElementById('transfer-close').addEventListener('click', () => {
+  document.getElementById('transfer-modal').classList.add('hidden');
+});
+
+document.getElementById('transfer-copy').addEventListener('click', () => {
+  const serial = document.getElementById('transfer-serial').textContent;
+  navigator.clipboard.writeText(serial).then(() => {
+    const btn = document.getElementById('transfer-copy');
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  }).catch(() => {});
+});
+
+function showAddOwners(serial) {
+  document.getElementById('addowners-serial').value = serial;
+  document.getElementById('addowners-count').value = '';
+  hideAlert(document.getElementById('addowners-alert'));
+  document.getElementById('addowners-modal').classList.remove('hidden');
+}
+
+document.getElementById('addowners-close').addEventListener('click', () => {
+  document.getElementById('addowners-modal').classList.add('hidden');
+});
+
+document.getElementById('addowners-submit').addEventListener('click', async () => {
+  const alertEl = document.getElementById('addowners-alert');
+  hideAlert(alertEl);
+  const serial = document.getElementById('addowners-serial').value;
+  const count = document.getElementById('addowners-count').value;
+  const btn = document.getElementById('addowners-submit');
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+
+  try {
+    await apiRequest(`/devices/${encodeURIComponent(serial)}/add-owners`, {
+      method: 'POST',
+      role: 'seller',
+      body: { count: parseInt(count, 10) },
+    });
+    document.getElementById('addowners-modal').classList.add('hidden');
+    loadDevices();
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add to ownership history';
+  }
+});
+
+function showRelease(serial) {
+  document.getElementById('release-serial').value = serial;
+  hideAlert(document.getElementById('release-alert'));
+  document.getElementById('release-modal').classList.remove('hidden');
+}
+
+document.getElementById('release-close').addEventListener('click', () => {
+  document.getElementById('release-modal').classList.add('hidden');
+});
+
+document.getElementById('release-confirm').addEventListener('click', async () => {
+  const alertEl = document.getElementById('release-alert');
+  hideAlert(alertEl);
+  const serial = document.getElementById('release-serial').value;
+  const btn = document.getElementById('release-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Releasing…';
+
+  try {
+    await apiRequest(`/devices/${encodeURIComponent(serial)}/release`, {
+      method: 'POST',
+      role: 'seller',
+    });
+    document.getElementById('release-modal').classList.add('hidden');
+    loadDevices();
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Yes, give up ownership';
+  }
+});
+
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById('reg-alert');
+  const successEl = document.getElementById('reg-success');
+  hideAlert(alertEl);
+  hideAlert(successEl);
+
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true;
+  btn.textContent = 'Registering…';
+
+  try {
+    const result = await apiRequest('/devices/register', {
+      method: 'POST',
+      role: 'seller',
+      body: {
+        serialNumber: document.getElementById('d-serial').value.trim(),
+        brand: document.getElementById('d-brand').value.trim() || null,
+        model: document.getElementById('d-model').value.trim() || null,
+        deviceType: document.getElementById('d-type').value.trim() || null,
+        manufacturedDate: document.getElementById('d-mfg').value || null,
+      },
+    });
+    if (result.wasTransfer) {
+      showAlert(successEl, `Ownership transferred to you. This device had ${result.previousOwnerCount} previous owner${result.previousOwnerCount === 1 ? '' : 's'} on record — you're now owner #${result.device.ownership_transfer_count}.`, 'success');
+    } else {
+      showAlert(successEl, 'Device registered. Generate its QR code from the list on the right.', 'success');
+    }
+    document.getElementById('register-form').reset();
+    loadDevices();
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Register device';
+  }
+});
+
+loadDevices();
+</script>
+</body>
+</html>
