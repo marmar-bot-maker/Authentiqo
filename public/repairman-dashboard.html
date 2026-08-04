@@ -60,17 +60,7 @@
             <input type="date" id="r-date" required>
           </div>
         </div>
-        <div class="field">
-          <label>Verification status</label>
-          <div class="radio-group">
-            <label class="radio-pill" id="pill-verified">
-              <input type="radio" name="verification" value="verified" checked> Verified by registered shop
-            </label>
-            <label class="radio-pill" id="pill-self">
-              <input type="radio" name="verification" value="self_reported"> Self-reported
-            </label>
-          </div>
-        </div>
+        <p class="hint" style="margin-bottom:16px;">Logged under your shop's account, so this entry is automatically marked Verified — there's no self-reported option here, since that's only meaningful for repairs done outside a registered shop.</p>
 
         <div class="form-subsection">
           <div class="form-subsection-head">
@@ -136,13 +126,6 @@ document.getElementById('logout-link').addEventListener('click', (e) => {
   window.location.href = '/repairman-login.html';
 });
 
-document.querySelectorAll('input[name="verification"]').forEach(input => {
-  input.addEventListener('change', () => {
-    document.getElementById('pill-verified').classList.toggle('checked', input.value === 'verified' && input.checked);
-    document.getElementById('pill-self').classList.toggle('checked', input.value === 'self_reported' && input.checked);
-  });
-});
-document.getElementById('pill-verified').classList.add('checked');
 
 // --- Parts used (optional, repeatable rows) ---
 let partRowCount = 0;
@@ -238,15 +221,13 @@ document.getElementById('repair-form').addEventListener('submit', async (e) => {
         description: document.getElementById('r-desc').value.trim(),
         location: document.getElementById('r-location').value.trim(),
         repairDate: document.getElementById('r-date').value,
-        verificationStatus: document.querySelector('input[name="verification"]:checked').value,
+        verificationStatus: 'verified',
         parts,
         warranty,
       },
     });
     showAlert(successEl, 'Repair stamped to the device history.', 'success');
     document.getElementById('repair-form').reset();
-    document.getElementById('pill-verified').classList.add('checked');
-    document.getElementById('pill-self').classList.remove('checked');
     document.getElementById('parts-rows').innerHTML = '';
     document.getElementById('warranty-fields').classList.add('hidden');
     loadEntries();

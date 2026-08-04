@@ -39,12 +39,24 @@ function detectRisks({ repairLogs = [], ownershipEvents = [], deviceCreatedAt })
       const windowEntries = sorted.filter((e) => daysBetween(sorted[i].repair_date, e.repair_date) <= 365 && new Date(e.repair_date) <= new Date(sorted[i].repair_date));
       if (windowEntries.length >= 3) {
         const flagged = windowEntries[windowEntries.length - 1];
+        const span = daysBetween(windowEntries[0].repair_date, flagged.repair_date);
+        const partName = kw.charAt(0).toUpperCase() + kw.slice(1);
+        let severity, title, explanation;
+        if (span <= 30) {
+          severity = 'high';
+          title = `${partName} replaced ${windowEntries.length} times in under a month`;
+          explanation = 'Three or more repairs to the same part within a single month is unusually frequent — worth asking the seller or shop about directly rather than assuming it\'s routine wear.';
+        } else if (span <= 90) {
+          severity = 'high';
+          title = `${partName} replaced ${windowEntries.length} times within ${Math.round(span)} days`;
+          explanation = 'Repeated replacements of the same part in a short window can indicate an underlying, unresolved issue rather than a one-off fix.';
+        } else {
+          severity = 'moderate';
+          title = `${partName} replaced ${windowEntries.length} times in one year`;
+          explanation = 'Repeated replacements of the same part over the course of a year is less alarming than a tight cluster, but still worth a quick question about what changed.';
+        }
         if (flagged.id) {
-          repairRisks[flagged.id] = {
-            severity: 'high',
-            title: `${kw.charAt(0).toUpperCase() + kw.slice(1)} replaced ${windowEntries.length} times in one year`,
-            explanation: 'Repeated replacements of the same part in a short window can indicate an underlying, unresolved issue rather than a one-off fix.',
-          };
+          repairRisks[flagged.id] = { severity, title, explanation };
         }
       }
     }

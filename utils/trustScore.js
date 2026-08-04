@@ -10,10 +10,10 @@ function daysBetween(dateA, dateB) {
   return Math.abs(new Date(dateB) - new Date(dateA)) / msPerDay;
 }
 
-// Same PART_KEYWORDS/windowing approach as utils/riskDetector.js, kept in sync
-// deliberately: a "screen replaced 3 times in one year" Risk Alert should never
-// show up in the timeline while the numeric Trust Score stays high right next
-// to it — that would be an inconsistent, confusing story on the same page.
+// Same PART_KEYWORDS approach as utils/riskDetector.js, kept in sync deliberately:
+// a "battery replaced 3 times in a month" Risk Alert should never show up in the
+// timeline while the numeric Trust Score stays high right next to it — that would
+// be an inconsistent, confusing story on the same page.
 const PART_KEYWORDS = ['battery', 'screen', 'display', 'keyboard', 'camera', 'motherboard', 'charging port', 'speaker'];
 
 function guessPartKeyword(description) {
@@ -21,9 +21,13 @@ function guessPartKeyword(description) {
   return PART_KEYWORDS.find((k) => lower.includes(k)) || null;
 }
 
-// Counts how many repair entries fall inside a same-part cluster of 3+
-// within a trailing 365-day window — mirrors riskDetector's detection exactly.
-function countRepeatedPartFlags(repairLogs) {
+// For each part keyword with 3+ repairs within a trailing 365-day window, finds
+// the TIGHTEST such cluster (smallest span between first and last repair in the
+// window) and grades it: three repairs in a month reads very differently from
+// three repairs spread across a year, even though both technically clear the
+// same "3 within 365 days" bar. Returns one entry per affected part — not one
+// per triggering day — so a long run of same-part repairs isn't over-counted.
+function findRepeatedPartClusters(repairLogs) {
   const byKeyword = {};
   repairLogs.forEach((r) => {
     const kw = guessPartKeyword(r.description);
@@ -32,21 +36,42 @@ function countRepeatedPartFlags(repairLogs) {
     byKeyword[kw].push(r);
   });
 
-  let flaggedCount = 0;
-  Object.values(byKeyword).forEach((entries) => {
+  const clusters = [];
+  Object.entries(byKeyword).forEach(([kw, entries]) => {
     const sorted = [...entries].sort((a, b) => new Date(a.repair_date) - new Date(b.repair_date));
+    let tightest = null;
     for (let i = 0; i < sorted.length; i++) {
       const windowEntries = sorted.filter(
         (e) => daysBetween(sorted[i].repair_date, e.repair_date) <= 365 && new Date(e.repair_date) <= new Date(sorted[i].repair_date)
       );
-      if (windowEntries.length >= 3) flaggedCount++;
+      if (windowEntries.length >= 3) {
+        const span = daysBetween(windowEntries[0].repair_date, sorted[i].repair_date);
+        if (!tightest || span < tightest.span) {
+          tightest = { count: windowEntries.length, span, lastEntry: sorted[i] };
+        }
+      }
+    }
+    if (tightest) {
+      let severity, label;
+      if (tightest.span <= 30) {
+        severity = 'severe';
+        label = `${kw.charAt(0).toUpperCase() + kw.slice(1)} replaced ${tightest.count} times in under a month — unusually frequent, worth asking about directly`;
+      } else if (tightest.span <= 90) {
+        severity = 'high';
+        label = `${kw.charAt(0).toUpperCase() + kw.slice(1)} replaced ${tightest.count} times within ${Math.round(tightest.span)} days`;
+      } else {
+        severity = 'moderate';
+        label = `${kw.charAt(0).toUpperCase() + kw.slice(1)} replaced ${tightest.count} times in one year`;
+      }
+      clusters.push({ keyword: kw, severity, label, count: tightest.count, span: tightest.span, lastEntry: tightest.lastEntry });
     }
   });
-  return flaggedCount;
+  return clusters;
 }
 
 function calculateTrustScore({ repairLogs = [], ownershipCount = 1, ownershipEvents = [] }) {
   let score = 70; // neutral baseline
+  let hardCap = 100; // a severe/high same-part cluster caps the final score, regardless of other positive factors
   const factors = [];
 
   // --- Verification status mix ---
@@ -75,26 +100,39 @@ function calculateTrustScore({ repairLogs = [], ownershipCount = 1, ownershipEve
       });
     }
 
-    // Repair volume itself was previously unscored — a device with 100% verified
-    // repairs got the same +20 bonus whether it had 1 repair or 15. A high repair
-    // count is a real signal worth reflecting in the number, not just left to the
-    // ratio.
+    // A high repair count spread across different parts isn't inherently
+    // suspicious — only flag it as a negative once it's clearly high, and note
+    // it neutrally below that. The real signal is repeated work on the SAME
+    // part, handled separately below.
     if (repairLogs.length >= 6) {
       score -= 12;
       factors.push({ label: `${repairLogs.length} repairs on file — a high number of repairs overall`, effect: 'negative' });
     } else if (repairLogs.length >= 4) {
-      score -= 6;
       factors.push({ label: `${repairLogs.length} repairs on file`, effect: 'neutral' });
     }
-
-    // Same part repaired repeatedly — mirrors the Risk Alert shown in the
-    // timeline, so the score and the visible warning never contradict each other.
-    const repeatedPartFlags = countRepeatedPartFlags(repairLogs);
-    if (repeatedPartFlags > 0) {
-      score -= Math.min(repeatedPartFlags * 12, 25);
-      factors.push({ label: 'Same part repaired multiple times within a year', effect: 'negative' });
-    }
   }
+
+  // --- Same part repaired repeatedly ---
+  // Mirrors the Risk Alert shown in the timeline, so the score and the visible
+  // warning never contradict each other. Severity scales with how tightly the
+  // repeats are clustered: three repairs in a month is a much stronger signal
+  // than three spread across a year, even though both clear the same "3
+  // within 365 days" bar. A severe cluster caps the score outright, rather
+  // than just subtracting points, since other positive factors shouldn't be
+  // able to fully offset a pattern this suspicious.
+  const repeatedPartClusters = findRepeatedPartClusters(repairLogs);
+  repeatedPartClusters.forEach((cluster) => {
+    if (cluster.severity === 'severe') {
+      score -= 30;
+      hardCap = Math.min(hardCap, 40);
+    } else if (cluster.severity === 'high') {
+      score -= 18;
+      hardCap = Math.min(hardCap, 60);
+    } else {
+      score -= 12;
+    }
+    factors.push({ label: cluster.label, effect: 'negative' });
+  });
 
   // --- Consistency / suspicious gaps or clustering ---
   if (repairLogs.length >= 2) {
@@ -141,6 +179,7 @@ function calculateTrustScore({ repairLogs = [], ownershipCount = 1, ownershipEve
     }
   }
 
+  score = Math.min(score, hardCap);
   score = Math.max(0, Math.min(100, Math.round(score)));
 
   let band = 'moderate';

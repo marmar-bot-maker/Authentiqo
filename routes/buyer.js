@@ -20,9 +20,12 @@ router.get('/:serialNumber', async (req, res) => {
     return res.status(404).json({ error: 'No device found for that serial number. Double-check the number and try again.' });
   }
 
+  // Aggregate engagement metric only — no per-visitor identity is stored, just a count.
+  await supabase.from('devices').update({ passport_view_count: (device.passport_view_count || 0) + 1 }).eq('serial_number', serialNumber);
+
   const { data: repairLogsRaw } = await supabase
     .from('repair_logs')
-    .select('id, description, location, repair_date, verification_status, repair_companies(id, company_name)')
+    .select('id, description, location, repair_date, verification_status, self_reported_by_seller_id, repair_companies(id, company_name)')
     .eq('serial_number', serialNumber)
     .order('repair_date', { ascending: true });
 
@@ -34,6 +37,7 @@ router.get('/:serialNumber', async (req, res) => {
     verification_status: r.verification_status,
     company_name: r.repair_companies ? r.repair_companies.company_name : null,
     repair_company_id: r.repair_companies ? r.repair_companies.id : null,
+    self_reported_by_seller: !!r.self_reported_by_seller_id,
   }));
 
   const { data: ownershipEvents } = await supabase

@@ -183,7 +183,7 @@ function renderRecommendation(score) {
   const detailEl = document.getElementById('recommendation-detail');
   let text, detail, color;
 
-  if (score <= 30) {
+  if (score <= 39) {
     text = 'Not recommended';
     detail = 'This device\'s history raises enough concerns that we wouldn\'t recommend buying it as-is.';
     color = 'var(--danger)';
@@ -305,7 +305,7 @@ async function loadDevice() {
             <span class="timeline-dot ${verified ? 'dot-verified' : 'dot-self'}"></span>
             <div class="timeline-date mono">${formatDate(r.repair_date)}</div>
             <div class="timeline-title">${r.description}</div>
-            <p class="timeline-meta"><span class="badge ${verified ? 'badge-verified' : 'badge-self'}">${verified ? 'Verified' : 'Self-reported'}</span> ${r.repair_company_id ? `<a href="/repair-shop/${r.repair_company_id}">${r.company_name || 'Repair shop'}</a>` : (r.company_name || '')} · ${r.location || ''}</p>
+            <p class="timeline-meta"><span class="badge ${verified ? 'badge-verified' : 'badge-self'}">${verified ? 'Verified' : 'Self-reported'}</span> ${r.repair_company_id ? `<a href="/repair-shop/${r.repair_company_id}">${r.company_name || 'Repair shop'}</a>` : (r.self_reported_by_seller ? 'Reported by the device owner' : (r.company_name || ''))} ${r.location && r.location !== 'Not specified' ? `· ${r.location}` : ''}</p>
             ${ratingHtml}
             ${riskAlertHtml(r.riskAlert)}
           `;
@@ -325,17 +325,35 @@ async function loadDevice() {
     }
 
     // --- Parts Authenticity ---
+    // data.parts is ordered newest-first. A part can be logged more than once
+    // (e.g. the battery was swapped twice) — show only the most recent status
+    // per part, not every historical record stacked on top of each other,
+    // since only the part currently in the device matters to a buyer.
     const partsList = document.getElementById('parts-list');
     partsList.innerHTML = '';
     if (data.parts.length === 0) {
       partsList.innerHTML = '<p class="empty-line">No parts authenticity data logged for this device yet.</p>';
     } else {
+      const latestByPart = new Map();
       data.parts.forEach(p => {
+        const key = p.part_name.trim().toLowerCase();
+        if (!latestByPart.has(key)) {
+          latestByPart.set(key, { latest: p, changeCount: 1 });
+        } else {
+          latestByPart.get(key).changeCount++;
+        }
+      });
+
+      latestByPart.forEach(({ latest: p, changeCount }) => {
         const row = document.createElement('div');
         row.className = 'detail-row';
         const statusLabel = p.authenticity_status.charAt(0).toUpperCase() + p.authenticity_status.slice(1);
         row.innerHTML = `
-          <div class="detail-main"><span class="status-dot ${p.authenticity_status}"></span><span class="detail-name">${p.part_name}</span></div>
+          <div class="detail-main">
+            <span class="status-dot ${p.authenticity_status}"></span>
+            <span class="detail-name">${p.part_name}</span>
+            ${changeCount > 1 ? `<span class="hint" style="margin-left:6px;">(changed ${changeCount} times)</span>` : ''}
+          </div>
           <span class="badge ${p.authenticity_status === 'genuine' ? 'badge-verified' : p.authenticity_status === 'aftermarket' ? 'badge-self' : 'badge-neutral'}">${statusLabel}</span>
         `;
         partsList.appendChild(row);

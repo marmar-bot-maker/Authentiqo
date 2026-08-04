@@ -122,3 +122,49 @@ create index if not exists idx_repair_ratings_log on repair_ratings(repair_log_i
 -- ============================================================
 alter table devices add column if not exists has_been_claimed boolean not null default false;
 update devices set has_been_claimed = true where registered_by_seller_id is not null;
+
+-- ============================================================
+-- Seller Dashboard redesign — self-reported repairs move from the repair
+-- shop dashboard (removed — a shop logging its own work is verified by
+-- definition) to the seller, who is the one actually positioned to know
+-- about repairs done outside a registered shop. Also adds passport view
+-- counting, seller-set warranty info, and an optional device photo.
+-- ============================================================
+
+-- A self-reported entry has no repair shop attached to it, so the old
+-- NOT NULL requirement no longer holds for every row.
+alter table repair_logs alter column repair_company_id drop not null;
+alter table repair_logs add column if not exists self_reported_by_seller_id bigint references sellers(id);
+
+-- Counts every time a device's public passport page is loaded (buyer scan
+-- or serial-number search) — an aggregate engagement metric shown to the
+-- seller, not a per-visitor log.
+alter table devices add column if not exists passport_view_count integer not null default 0;
+
+-- A small device photo, stored inline as a data URL rather than in separate
+-- object storage — keeps this feature usable without provisioning a storage
+-- bucket. Fine at this project's scale; revisit if photos become common.
+alter table devices add column if not exists image_data_url text;
+
+create index if not exists idx_repair_logs_self_reported on repair_logs(self_reported_by_seller_id);
+
+-- Tracks when a device record last changed, for the "last updated" shown on
+-- each dashboard card. A trigger (rather than patching every UPDATE call
+-- individually) so it can't accidentally be missed from a future write path.
+-- Note: this also ticks up on the passport-view counter increment, so "last
+-- updated" can reflect a buyer view, not only a seller-initiated change —
+-- an acceptable simplification at this project's scale.
+alter table devices add column if not exists updated_at timestamptz not null default now();
+
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists devices_set_updated_at on devices;
+create trigger devices_set_updated_at
+before update on devices
+for each row execute function set_updated_at();

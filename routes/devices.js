@@ -182,7 +182,95 @@ router.post('/:serialNumber/add-owners', requireRole('seller'), async (req, res)
   res.json({ ownershipTransferCount: newCount, added: count });
 });
 
-// List devices registered by the authenticated seller, with a repair-entry count per device
+// Seller sets or updates the device's warranty info (manufacturer/extended —
+// distinct from a repair-shop-issued guarantee, which is logged by the shop
+// itself when they log a repair). Upserts: editing an existing seller-set
+// warranty updates it in place rather than piling up duplicate rows.
+router.post('/:serialNumber/warranty', requireRole('seller'), async (req, res) => {
+  const { serialNumber } = req.params;
+  const { endDate, coverageDescription } = req.body;
+
+  if (!endDate) {
+    return res.status(400).json({ error: 'An end date is required to set a warranty.' });
+  }
+
+  const { data: device } = await supabase
+    .from('devices')
+    .select('serial_number, registered_by_seller_id')
+    .eq('serial_number', serialNumber)
+    .maybeSingle();
+
+  if (!device || device.registered_by_seller_id !== req.user.id) {
+    return res.status(403).json({ error: 'You can only set a warranty on a device registered under your own account.' });
+  }
+
+  const { data: existing } = await supabase
+    .from('warranties')
+    .select('id')
+    .eq('serial_number', serialNumber)
+    .eq('warranty_type', 'manufacturer')
+    .is('issued_by_repair_company_id', null)
+    .maybeSingle();
+
+  const status = new Date(endDate) < new Date() ? 'expired' : 'active';
+
+  if (existing) {
+    await supabase
+      .from('warranties')
+      .update({ end_date: endDate, coverage_description: coverageDescription || null, status })
+      .eq('id', existing.id);
+  } else {
+    await supabase.from('warranties').insert({
+      serial_number: serialNumber,
+      warranty_type: 'manufacturer',
+      status,
+      coverage_description: coverageDescription || null,
+      end_date: endDate,
+    });
+  }
+
+  res.json({ endDate, status });
+});
+
+// Seller uploads a device photo, stored inline as a data URL. Capped well
+// under typical base64 bloat from a phone photo so a Postgres row never gets
+// unreasonably large — the frontend is expected to resize before sending.
+router.post('/:serialNumber/image', requireRole('seller'), async (req, res) => {
+  const { serialNumber } = req.params;
+  const { imageDataUrl } = req.body;
+
+  if (!imageDataUrl || !imageDataUrl.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'A valid image is required.' });
+  }
+  if (imageDataUrl.length > 400000) {
+    return res.status(400).json({ error: 'Image is too large. Try a smaller photo.' });
+  }
+
+  const { data: device } = await supabase
+    .from('devices')
+    .select('serial_number, registered_by_seller_id')
+    .eq('serial_number', serialNumber)
+    .maybeSingle();
+
+  if (!device || device.registered_by_seller_id !== req.user.id) {
+    return res.status(403).json({ error: 'You can only update a photo on a device registered under your own account.' });
+  }
+
+  const { error } = await supabase
+    .from('devices')
+    .update({ image_data_url: imageDataUrl })
+    .eq('serial_number', serialNumber);
+
+  if (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Could not save the photo.' });
+  }
+
+  res.json({ saved: true });
+});
+
+// List devices registered by the authenticated seller, with a repair-entry count,
+// passport view count, warranty status, and photo per device
 router.get('/mine', requireRole('seller'), async (req, res) => {
   const { data: devices, error } = await supabase
     .from('devices')
@@ -195,12 +283,19 @@ router.get('/mine', requireRole('seller'), async (req, res) => {
     return res.status(500).json({ error: 'Could not load devices.' });
   }
 
+  const serials = (devices || []).map((d) => d.serial_number);
+  const { data: warranties } = serials.length
+    ? await supabase.from('warranties').select('serial_number, end_date, status, coverage_description').eq('warranty_type', 'manufacturer').is('issued_by_repair_company_id', null).in('serial_number', serials)
+    : { data: [] };
+  const warrantyBySerial = {};
+  (warranties || []).forEach((w) => { warrantyBySerial[w.serial_number] = w; });
+
   const devicesWithCounts = await Promise.all((devices || []).map(async (device) => {
     const { count } = await supabase
       .from('repair_logs')
       .select('*', { count: 'exact', head: true })
       .eq('serial_number', device.serial_number);
-    return { ...device, repair_count: count || 0 };
+    return { ...device, repair_count: count || 0, warranty: warrantyBySerial[device.serial_number] || null };
   }));
 
   res.json({ devices: devicesWithCounts });

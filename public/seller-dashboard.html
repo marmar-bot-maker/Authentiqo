@@ -31,7 +31,7 @@
     <div class="top-row">
       <div>
         <h2 id="seller-name">Seller</h2>
-        <p>Register devices, review ownership history, and generate QR codes for listings.</p>
+        <p>Register devices, self-report past repairs, manage warranties, and generate QR codes for listings.</p>
       </div>
     </div>
   </div>
@@ -46,69 +46,65 @@
       <div class="stat-value" id="stat-repairs">–</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Avg. ownership transfers</div>
-      <div class="stat-value" id="stat-owners">–</div>
+      <div class="stat-label">Total passport views</div>
+      <div class="stat-value" id="stat-views">–</div>
     </div>
   </div>
 
-  <div class="dash-grid">
-    <div class="card card-pad">
-      <h3>Register a device</h3>
-      <p class="hint" style="margin-bottom:16px;">
-        Already registered by someone else? Enter the same serial number under your own
-        account and ownership transfers to you automatically — no separate "transfer" step needed.
-      </p>
-      <div class="alert alert-error" id="reg-alert"></div>
-      <div class="alert alert-success" id="reg-success"></div>
-      <form id="register-form">
-        <div class="field">
-          <label for="d-serial">Serial number</label>
-          <input type="text" id="d-serial" class="mono" placeholder="e.g. SN-84920-XJ" required>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="d-brand">Brand</label>
-            <input type="text" id="d-brand" placeholder="e.g. Aster">
-          </div>
-          <div class="field">
-            <label for="d-model">Model</label>
-            <input type="text" id="d-model" placeholder="e.g. Slate 14">
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="d-type">Device type</label>
-            <input type="text" id="d-type" placeholder="e.g. Laptop">
-          </div>
-          <div class="field">
-            <label for="d-mfg">Manufactured date</label>
-            <input type="date" id="d-mfg">
-          </div>
-        </div>
-        <p class="hint" style="margin-bottom:16px;">Repair history is pulled in automatically from repairman records — you can't add or edit it here.</p>
-        <button type="submit" class="btn btn-accent btn-block" id="register-btn">Register device</button>
-      </form>
-    </div>
+  <div class="dash-toolbar">
+    <h3>Your devices</h3>
+    <button class="btn btn-accent" id="open-register-btn">+ Register a device</button>
+  </div>
 
-    <div class="card card-pad">
-      <div class="panel-title">
-        <h3>Your devices</h3>
-      </div>
-      <div id="table-wrap">
-        <table class="list-table">
-          <thead>
-            <tr><th>Serial</th><th>Device</th><th>Owners</th><th></th></tr>
-          </thead>
-          <tbody id="devices-body"></tbody>
-        </table>
-      </div>
-      <div class="empty-state hidden" id="devices-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 01-1 1H5a1 1 0 01-1-1V9z"/></svg>
-        <p>No devices registered yet. Add one to generate its first QR code.</p>
-      </div>
-    </div>
+  <div class="device-card-grid" id="device-grid"></div>
+
+  <div class="empty-state hidden" id="devices-empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 01-1 1H5a1 1 0 01-1-1V9z"/></svg>
+    <p>No devices registered yet. Click "Register a device" to add your first one.</p>
   </div>
 </main>
+
+<!-- Register a device modal -->
+<div id="register-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,41,66,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
+  <div class="card card-pad" style="max-width:440px;width:100%;max-height:90vh;overflow-y:auto;">
+    <h3>Register a device</h3>
+    <p class="hint" style="margin-bottom:16px;">
+      Already registered by someone else? Enter the same serial number under your own
+      account and ownership transfers to you automatically — no separate "transfer" step needed.
+    </p>
+    <div class="alert alert-error" id="reg-alert"></div>
+    <div class="alert alert-success" id="reg-success"></div>
+    <form id="register-form">
+      <div class="field">
+        <label for="d-serial">Serial number</label>
+        <input type="text" id="d-serial" class="mono" placeholder="e.g. SN-84920-XJ" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="d-brand">Brand</label>
+          <input type="text" id="d-brand" placeholder="e.g. Aster">
+        </div>
+        <div class="field">
+          <label for="d-model">Model</label>
+          <input type="text" id="d-model" placeholder="e.g. Slate 14">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="d-type">Device type</label>
+          <input type="text" id="d-type" placeholder="e.g. Laptop">
+        </div>
+        <div class="field">
+          <label for="d-mfg">Manufactured date</label>
+          <input type="date" id="d-mfg">
+        </div>
+      </div>
+      <p class="hint" style="margin-bottom:16px;">Repair history is pulled in automatically from repair shop records — you can't add or edit it here.</p>
+      <button type="submit" class="btn btn-accent btn-block" id="register-btn">Register device</button>
+      <button type="button" class="btn btn-outline btn-block" id="register-cancel" style="margin-top:8px;">Cancel</button>
+    </form>
+  </div>
+</div>
 
 <div id="qr-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,41,66,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
   <div class="card card-pad qr-panel" style="max-width:340px;width:100%;">
@@ -185,166 +181,324 @@ document.getElementById('logout-link').addEventListener('click', (e) => {
   window.location.href = '/seller-login.html';
 });
 
+// ---------- Small inline icon set (kept consistent with the site's existing thin-stroke style) ----------
+const icons = {
+  wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 005.4-5.4l-2.3 2.3-2-2 2.3-2.3z" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18" stroke-linecap="round"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.2"/></svg>',
+  chevron: '<svg class="device-card-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  device: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="14" rx="1.5"/><path d="M9 21h6" stroke-linecap="round"/></svg>',
+};
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function warrantyBadge(warranty) {
+  if (!warranty || !warranty.end_date) {
+    return { html: '', alert: false };
+  }
+  const end = new Date(warranty.end_date);
+  const now = new Date();
+  const monthsLeft = (end - now) / (1000 * 60 * 60 * 24 * 30);
+  if (end < now) {
+    return { html: `<span class="warranty-badge expired">${icons.calendar} Warranty expired</span>`, alert: false };
+  }
+  if (monthsLeft < 6) {
+    return { html: `<span class="warranty-badge soon">${icons.calendar} Warranty expires soon</span>`, alert: true };
+  }
+  return { html: `<span class="warranty-badge ok">${icons.calendar} Warranty active</span>`, alert: false };
+}
+
+let deviceCache = [];
+
 async function loadDevices() {
   try {
     const data = await apiRequest('/devices/mine', { role: 'seller' });
-    const body = document.getElementById('devices-body');
+    deviceCache = data.devices;
+    const grid = document.getElementById('device-grid');
     const empty = document.getElementById('devices-empty');
-    body.innerHTML = '';
+    grid.innerHTML = '';
 
     document.getElementById('stat-devices').textContent = data.devices.length;
-    const avgOwners = data.devices.length
-      ? (data.devices.reduce((sum, d) => sum + d.ownership_transfer_count, 0) / data.devices.length).toFixed(1)
-      : '0';
-    document.getElementById('stat-owners').textContent = avgOwners;
+    const repairTotal = data.devices.reduce((sum, d) => sum + (d.repair_count || 0), 0);
+    const viewTotal = data.devices.reduce((sum, d) => sum + (d.passport_view_count || 0), 0);
+    document.getElementById('stat-repairs').textContent = repairTotal;
+    document.getElementById('stat-views').textContent = viewTotal;
 
     if (data.devices.length === 0) {
-      document.getElementById('table-wrap').classList.add('hidden');
+      grid.classList.add('hidden');
       empty.classList.remove('hidden');
-      document.getElementById('stat-repairs').textContent = '0';
       return;
     }
-    document.getElementById('table-wrap').classList.remove('hidden');
+    grid.classList.remove('hidden');
     empty.classList.add('hidden');
 
-    let repairTotal = 0;
-    for (const device of data.devices) {
-      repairTotal += device.repair_count || 0;
-      const tr = document.createElement('tr');
-      const kind = [device.brand, device.model].filter(Boolean).join(' ') || '—';
-      tr.innerHTML = `
-        <td class="mono">${device.serial_number}</td>
-        <td>${kind}</td>
-        <td>${device.ownership_transfer_count}</td>
-        <td>
-          <button class="btn btn-sm btn-outline" data-serial="${device.serial_number}">Get QR code</button>
-          <button class="btn btn-sm btn-ghost" data-transfer-serial="${device.serial_number}">Transfer ownership</button>
-          <button class="btn btn-sm btn-ghost" data-addowners-serial="${device.serial_number}">Add previous owners</button>
-          <button class="btn btn-sm btn-ghost" data-release-serial="${device.serial_number}" style="color:var(--danger);">Give up ownership</button>
-        </td>`;
-      body.appendChild(tr);
-    }
-    document.getElementById('stat-repairs').textContent = repairTotal;
-
-    document.querySelectorAll('[data-serial]').forEach(btn => {
-      btn.addEventListener('click', () => showQr(btn.dataset.serial));
-    });
-    document.querySelectorAll('[data-transfer-serial]').forEach(btn => {
-      btn.addEventListener('click', () => showTransfer(btn.dataset.transferSerial));
-    });
-    document.querySelectorAll('[data-addowners-serial]').forEach(btn => {
-      btn.addEventListener('click', () => showAddOwners(btn.dataset.addownersSerial));
-    });
-    document.querySelectorAll('[data-release-serial]').forEach(btn => {
-      btn.addEventListener('click', () => showRelease(btn.dataset.releaseSerial));
-    });
+    data.devices.forEach((device) => renderCard(grid, device));
   } catch (err) {
     if (err.status === 401) { Auth.logout('seller'); window.location.href = '/seller-login.html'; }
   }
 }
 
-async function showQr(serial) {
-  try {
-    const data = await apiRequest(`/devices/${encodeURIComponent(serial)}/qrcode`, { role: 'seller' });
-    document.getElementById('qr-serial').textContent = serial;
-    document.getElementById('qr-image').src = data.qr.dataUrl;
-    document.getElementById('qr-url').textContent = data.qr.url;
-    document.getElementById('qr-modal').classList.remove('hidden');
-  } catch (err) {
-    alert(err.message);
-  }
+function renderCard(grid, device) {
+  const name = [device.brand, device.model].filter(Boolean).join(' ') || device.device_type || 'Unnamed device';
+  const last4 = device.serial_number.slice(-4);
+  const wb = warrantyBadge(device.warranty);
+
+  const card = document.createElement('div');
+  card.className = 'device-card';
+  card.dataset.serial = device.serial_number;
+
+  card.innerHTML = `
+    <div class="device-card-face">
+      ${device.image_data_url
+        ? `<img class="device-photo" src="${device.image_data_url}" alt="${name}">`
+        : `<div class="device-photo-placeholder">${icons.device}</div>`}
+      <div class="device-card-face-main">
+        <div class="device-card-name">${name}</div>
+        <div class="device-card-meta">
+          <span class="mono device-card-serial" data-reveal-serial="${device.serial_number}" title="Click to reveal full serial">•••• ${last4}</span>
+          <span class="owner-badge">${ordinal(device.ownership_transfer_count)} Owner</span>
+          ${wb.html}
+        </div>
+      </div>
+      ${icons.chevron}
+    </div>
+    <div class="device-card-body">
+      <div class="device-card-body-inner">
+
+        <div class="device-section">
+          <div class="device-section-title">${icons.wrench} Self-report a past repair</div>
+          <p class="hint" style="margin-bottom:10px;">For repairs done outside a registered shop. This is logged as <strong>self-reported</strong> and unverified — clearly marked as such to buyers.</p>
+          <div class="alert alert-error self-report-alert"></div>
+          <div class="field">
+            <label>Description</label>
+            <input type="text" class="self-report-desc" placeholder="e.g. Replaced battery myself">
+          </div>
+          <div class="field">
+            <label>Repair date</label>
+            <input type="date" class="self-report-date">
+          </div>
+          <div class="field-row">
+            <input type="text" class="self-report-part-name" placeholder="Part used (optional), e.g. Battery" style="flex:1;">
+            <select class="self-report-part-status" style="flex:0 0 140px;">
+              <option value="genuine">Genuine</option>
+              <option value="aftermarket">Aftermarket</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+          <button class="btn btn-outline btn-sm self-report-submit" style="margin-top:8px;">Log self-reported repair</button>
+        </div>
+
+        <div class="device-section">
+          <div class="device-section-title">${icons.eye} Repair history &amp; passport views</div>
+          <p style="margin:0; color:var(--text);"><strong>${device.repair_count || 0}</strong> repair ${device.repair_count === 1 ? 'entry' : 'entries'} on file (including self-reported) &middot; <strong>${device.passport_view_count || 0}</strong> total passport views</p>
+        </div>
+
+        <div class="device-section">
+          <div class="device-section-title">${icons.calendar} Warranty</div>
+          <div class="alert alert-error warranty-alert"></div>
+          <div class="field-row">
+            <div class="field">
+              <label>Coverage ends</label>
+              <input type="date" class="warranty-end" value="${device.warranty ? device.warranty.end_date : ''}">
+            </div>
+            <div class="field">
+              <label>Description (optional)</label>
+              <input type="text" class="warranty-desc" placeholder="e.g. Manufacturer 1-year warranty" value="${device.warranty && device.warranty.coverage_description ? device.warranty.coverage_description : ''}">
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm warranty-submit">Save warranty</button>
+        </div>
+
+        <div class="device-section">
+          <div class="device-section-title">${icons.camera} Device photo</div>
+          <input type="file" accept="image/*" class="photo-input" style="display:none;">
+          <button class="btn btn-outline btn-sm photo-trigger">Upload or take a photo</button>
+          <span class="hint photo-status" style="margin-left:8px;"></span>
+        </div>
+
+        <div class="device-section">
+          <div class="device-section-title">Actions</div>
+          <div class="device-section-actions">
+            <button class="btn btn-sm btn-outline qr-btn">Get QR code</button>
+            <button class="btn btn-sm btn-ghost transfer-btn">Transfer ownership</button>
+            <button class="btn btn-sm btn-ghost addowners-btn">Add previous owners</button>
+            <button class="btn btn-sm btn-ghost release-btn" style="color:var(--danger);">Give up ownership</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="device-card-subfooter">
+        <span>${icons.clock} Updated ${formatDate(device.updated_at)}</span>
+        <span>${icons.eye} ${device.passport_view_count || 0} views</span>
+        <span>${icons.calendar} Registered ${formatDate(device.created_at)}</span>
+      </div>
+    </div>
+  `;
+
+  // Expand/collapse
+  card.querySelector('.device-card-face').addEventListener('click', () => {
+    card.classList.toggle('expanded');
+  });
+
+  // Reveal full serial on click, without triggering expand/collapse
+  const serialEl = card.querySelector('[data-reveal-serial]');
+  serialEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    serialEl.textContent = serialEl.textContent.startsWith('••••') ? device.serial_number : `•••• ${last4}`;
+  });
+
+  // Self-report submit
+  card.querySelector('.self-report-submit').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const alertEl = card.querySelector('.self-report-alert');
+    hideAlert(alertEl);
+    const description = card.querySelector('.self-report-desc').value.trim();
+    const repairDate = card.querySelector('.self-report-date').value;
+    const partName = card.querySelector('.self-report-part-name').value.trim();
+    const partStatus = card.querySelector('.self-report-part-status').value;
+    const btn = card.querySelector('.self-report-submit');
+
+    if (!description || !repairDate) {
+      showAlert(alertEl, 'Description and repair date are required.');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Logging…';
+    try {
+      await apiRequest('/repairs/self-report', {
+        method: 'POST',
+        role: 'seller',
+        body: {
+          serialNumber: device.serial_number,
+          description,
+          repairDate,
+          parts: partName ? [{ partName, authenticityStatus: partStatus }] : [],
+        },
+      });
+      card.querySelector('.self-report-desc').value = '';
+      card.querySelector('.self-report-date').value = '';
+      card.querySelector('.self-report-part-name').value = '';
+      loadDevices();
+    } catch (err) {
+      showAlert(alertEl, err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Log self-reported repair';
+    }
+  });
+
+  // Warranty submit
+  card.querySelector('.warranty-submit').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const alertEl = card.querySelector('.warranty-alert');
+    hideAlert(alertEl);
+    const endDate = card.querySelector('.warranty-end').value;
+    const coverageDescription = card.querySelector('.warranty-desc').value.trim();
+    const btn = card.querySelector('.warranty-submit');
+    if (!endDate) {
+      showAlert(alertEl, 'Pick an end date to save a warranty.');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      await apiRequest(`/devices/${encodeURIComponent(device.serial_number)}/warranty`, {
+        method: 'POST',
+        role: 'seller',
+        body: { endDate, coverageDescription },
+      });
+      loadDevices();
+    } catch (err) {
+      showAlert(alertEl, err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save warranty';
+    }
+  });
+
+  // Photo upload — resized client-side before sending, so a full-resolution phone
+  // photo never gets sent as-is (keeps the stored data URL reasonably small).
+  const photoInput = card.querySelector('.photo-input');
+  card.querySelector('.photo-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    photoInput.click();
+  });
+  photoInput.addEventListener('click', (e) => e.stopPropagation());
+  photoInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    const statusEl = card.querySelector('.photo-status');
+    if (!file) return;
+    statusEl.textContent = 'Uploading…';
+    try {
+      const dataUrl = await resizeImageFile(file, 480);
+      await apiRequest(`/devices/${encodeURIComponent(device.serial_number)}/image`, {
+        method: 'POST',
+        role: 'seller',
+        body: { imageDataUrl: dataUrl },
+      });
+      statusEl.textContent = 'Saved.';
+      loadDevices();
+    } catch (err) {
+      statusEl.textContent = err.message || 'Could not save photo.';
+    } finally {
+      photoInput.value = '';
+    }
+  });
+
+  // QR / Transfer / Add owners / Release — same modals as before, opened from inside the card
+  card.querySelector('.qr-btn').addEventListener('click', (e) => { e.stopPropagation(); showQr(device.serial_number); });
+  card.querySelector('.transfer-btn').addEventListener('click', (e) => { e.stopPropagation(); showTransfer(device.serial_number); });
+  card.querySelector('.addowners-btn').addEventListener('click', (e) => { e.stopPropagation(); showAddOwners(device.serial_number); });
+  card.querySelector('.release-btn').addEventListener('click', (e) => { e.stopPropagation(); showRelease(device.serial_number); });
+
+  grid.appendChild(card);
 }
 
-document.getElementById('qr-close').addEventListener('click', () => {
-  document.getElementById('qr-modal').classList.add('hidden');
-});
-
-function showTransfer(serial) {
-  document.getElementById('transfer-serial').textContent = serial;
-  document.getElementById('transfer-modal').classList.remove('hidden');
+function resizeImageFile(file, maxDimension) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that file.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not read that image.'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
-document.getElementById('transfer-close').addEventListener('click', () => {
-  document.getElementById('transfer-modal').classList.add('hidden');
+// ---------- Register modal ----------
+document.getElementById('open-register-btn').addEventListener('click', () => {
+  document.getElementById('register-modal').classList.remove('hidden');
 });
-
-document.getElementById('transfer-copy').addEventListener('click', () => {
-  const serial = document.getElementById('transfer-serial').textContent;
-  navigator.clipboard.writeText(serial).then(() => {
-    const btn = document.getElementById('transfer-copy');
-    const original = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = original; }, 1500);
-  }).catch(() => {});
-});
-
-function showAddOwners(serial) {
-  document.getElementById('addowners-serial').value = serial;
-  document.getElementById('addowners-count').value = '';
-  hideAlert(document.getElementById('addowners-alert'));
-  document.getElementById('addowners-modal').classList.remove('hidden');
-}
-
-document.getElementById('addowners-close').addEventListener('click', () => {
-  document.getElementById('addowners-modal').classList.add('hidden');
-});
-
-document.getElementById('addowners-submit').addEventListener('click', async () => {
-  const alertEl = document.getElementById('addowners-alert');
-  hideAlert(alertEl);
-  const serial = document.getElementById('addowners-serial').value;
-  const count = document.getElementById('addowners-count').value;
-  const btn = document.getElementById('addowners-submit');
-  btn.disabled = true;
-  btn.textContent = 'Adding…';
-
-  try {
-    await apiRequest(`/devices/${encodeURIComponent(serial)}/add-owners`, {
-      method: 'POST',
-      role: 'seller',
-      body: { count: parseInt(count, 10) },
-    });
-    document.getElementById('addowners-modal').classList.add('hidden');
-    loadDevices();
-  } catch (err) {
-    showAlert(alertEl, err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Add to ownership history';
-  }
-});
-
-function showRelease(serial) {
-  document.getElementById('release-serial').value = serial;
-  hideAlert(document.getElementById('release-alert'));
-  document.getElementById('release-modal').classList.remove('hidden');
-}
-
-document.getElementById('release-close').addEventListener('click', () => {
-  document.getElementById('release-modal').classList.add('hidden');
-});
-
-document.getElementById('release-confirm').addEventListener('click', async () => {
-  const alertEl = document.getElementById('release-alert');
-  hideAlert(alertEl);
-  const serial = document.getElementById('release-serial').value;
-  const btn = document.getElementById('release-confirm');
-  btn.disabled = true;
-  btn.textContent = 'Releasing…';
-
-  try {
-    await apiRequest(`/devices/${encodeURIComponent(serial)}/release`, {
-      method: 'POST',
-      role: 'seller',
-    });
-    document.getElementById('release-modal').classList.add('hidden');
-    loadDevices();
-  } catch (err) {
-    showAlert(alertEl, err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Yes, give up ownership';
-  }
+document.getElementById('register-cancel').addEventListener('click', () => {
+  document.getElementById('register-modal').classList.add('hidden');
 });
 
 document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -373,15 +527,115 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     if (result.wasTransfer) {
       showAlert(successEl, `Ownership transferred to you. This device had ${result.previousOwnerCount} previous owner${result.previousOwnerCount === 1 ? '' : 's'} on record — you're now owner #${result.device.ownership_transfer_count}.`, 'success');
     } else {
-      showAlert(successEl, 'Device registered. Generate its QR code from the list on the right.', 'success');
+      showAlert(successEl, 'Device registered.', 'success');
     }
     document.getElementById('register-form').reset();
     loadDevices();
+    setTimeout(() => { document.getElementById('register-modal').classList.add('hidden'); hideAlert(successEl); }, 1600);
   } catch (err) {
     showAlert(alertEl, err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Register device';
+  }
+});
+
+// ---------- QR modal ----------
+async function showQr(serial) {
+  try {
+    const data = await apiRequest(`/devices/${encodeURIComponent(serial)}/qrcode`, { role: 'seller' });
+    document.getElementById('qr-serial').textContent = serial;
+    document.getElementById('qr-image').src = data.qr.dataUrl;
+    document.getElementById('qr-url').textContent = data.qr.url;
+    document.getElementById('qr-modal').classList.remove('hidden');
+  } catch (err) {
+    alert(err.message);
+  }
+}
+document.getElementById('qr-close').addEventListener('click', () => {
+  document.getElementById('qr-modal').classList.add('hidden');
+});
+
+// ---------- Transfer modal ----------
+function showTransfer(serial) {
+  document.getElementById('transfer-serial').textContent = serial;
+  document.getElementById('transfer-modal').classList.remove('hidden');
+}
+document.getElementById('transfer-close').addEventListener('click', () => {
+  document.getElementById('transfer-modal').classList.add('hidden');
+});
+document.getElementById('transfer-copy').addEventListener('click', () => {
+  const serial = document.getElementById('transfer-serial').textContent;
+  navigator.clipboard.writeText(serial).then(() => {
+    const btn = document.getElementById('transfer-copy');
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  }).catch(() => {});
+});
+
+// ---------- Add owners modal ----------
+function showAddOwners(serial) {
+  document.getElementById('addowners-serial').value = serial;
+  document.getElementById('addowners-count').value = '';
+  hideAlert(document.getElementById('addowners-alert'));
+  document.getElementById('addowners-modal').classList.remove('hidden');
+}
+document.getElementById('addowners-close').addEventListener('click', () => {
+  document.getElementById('addowners-modal').classList.add('hidden');
+});
+document.getElementById('addowners-submit').addEventListener('click', async () => {
+  const alertEl = document.getElementById('addowners-alert');
+  hideAlert(alertEl);
+  const serial = document.getElementById('addowners-serial').value;
+  const count = document.getElementById('addowners-count').value;
+  const btn = document.getElementById('addowners-submit');
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+  try {
+    await apiRequest(`/devices/${encodeURIComponent(serial)}/add-owners`, {
+      method: 'POST',
+      role: 'seller',
+      body: { count: parseInt(count, 10) },
+    });
+    document.getElementById('addowners-modal').classList.add('hidden');
+    loadDevices();
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add to ownership history';
+  }
+});
+
+// ---------- Release modal ----------
+function showRelease(serial) {
+  document.getElementById('release-serial').value = serial;
+  hideAlert(document.getElementById('release-alert'));
+  document.getElementById('release-modal').classList.remove('hidden');
+}
+document.getElementById('release-close').addEventListener('click', () => {
+  document.getElementById('release-modal').classList.add('hidden');
+});
+document.getElementById('release-confirm').addEventListener('click', async () => {
+  const alertEl = document.getElementById('release-alert');
+  hideAlert(alertEl);
+  const serial = document.getElementById('release-serial').value;
+  const btn = document.getElementById('release-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Releasing…';
+  try {
+    await apiRequest(`/devices/${encodeURIComponent(serial)}/release`, {
+      method: 'POST',
+      role: 'seller',
+    });
+    document.getElementById('release-modal').classList.add('hidden');
+    loadDevices();
+  } catch (err) {
+    showAlert(alertEl, err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Yes, give up ownership';
   }
 });
 
