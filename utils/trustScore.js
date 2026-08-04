@@ -10,6 +10,41 @@ function daysBetween(dateA, dateB) {
   return Math.abs(new Date(dateB) - new Date(dateA)) / msPerDay;
 }
 
+// Same PART_KEYWORDS/windowing approach as utils/riskDetector.js, kept in sync
+// deliberately: a "screen replaced 3 times in one year" Risk Alert should never
+// show up in the timeline while the numeric Trust Score stays high right next
+// to it — that would be an inconsistent, confusing story on the same page.
+const PART_KEYWORDS = ['battery', 'screen', 'display', 'keyboard', 'camera', 'motherboard', 'charging port', 'speaker'];
+
+function guessPartKeyword(description) {
+  const lower = (description || '').toLowerCase();
+  return PART_KEYWORDS.find((k) => lower.includes(k)) || null;
+}
+
+// Counts how many repair entries fall inside a same-part cluster of 3+
+// within a trailing 365-day window — mirrors riskDetector's detection exactly.
+function countRepeatedPartFlags(repairLogs) {
+  const byKeyword = {};
+  repairLogs.forEach((r) => {
+    const kw = guessPartKeyword(r.description);
+    if (!kw) return;
+    if (!byKeyword[kw]) byKeyword[kw] = [];
+    byKeyword[kw].push(r);
+  });
+
+  let flaggedCount = 0;
+  Object.values(byKeyword).forEach((entries) => {
+    const sorted = [...entries].sort((a, b) => new Date(a.repair_date) - new Date(b.repair_date));
+    for (let i = 0; i < sorted.length; i++) {
+      const windowEntries = sorted.filter(
+        (e) => daysBetween(sorted[i].repair_date, e.repair_date) <= 365 && new Date(e.repair_date) <= new Date(sorted[i].repair_date)
+      );
+      if (windowEntries.length >= 3) flaggedCount++;
+    }
+  });
+  return flaggedCount;
+}
+
 function calculateTrustScore({ repairLogs = [], ownershipCount = 1, ownershipEvents = [] }) {
   let score = 70; // neutral baseline
   const factors = [];
@@ -38,6 +73,26 @@ function calculateTrustScore({ repairLogs = [], ownershipCount = 1, ownershipEve
         label: `${selfReportedCount} self-reported ${selfReportedCount === 1 ? 'entry' : 'entries'} (unverified)`,
         effect: 'negative',
       });
+    }
+
+    // Repair volume itself was previously unscored — a device with 100% verified
+    // repairs got the same +20 bonus whether it had 1 repair or 15. A high repair
+    // count is a real signal worth reflecting in the number, not just left to the
+    // ratio.
+    if (repairLogs.length >= 6) {
+      score -= 12;
+      factors.push({ label: `${repairLogs.length} repairs on file — a high number of repairs overall`, effect: 'negative' });
+    } else if (repairLogs.length >= 4) {
+      score -= 6;
+      factors.push({ label: `${repairLogs.length} repairs on file`, effect: 'neutral' });
+    }
+
+    // Same part repaired repeatedly — mirrors the Risk Alert shown in the
+    // timeline, so the score and the visible warning never contradict each other.
+    const repeatedPartFlags = countRepeatedPartFlags(repairLogs);
+    if (repeatedPartFlags > 0) {
+      score -= Math.min(repeatedPartFlags * 12, 25);
+      factors.push({ label: 'Same part repaired multiple times within a year', effect: 'negative' });
     }
   }
 
