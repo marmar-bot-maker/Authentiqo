@@ -80,8 +80,12 @@ function detectRisks({ repairLogs = [], ownershipEvents = [], deviceCreatedAt })
       };
     }
 
-    // Rapid flips: two transfers within 14 days of each other
+   // Rapid flips: two transfers within 14 days of each other. Skips any gap
+    // involving owner #1 — that timestamp is just when the first owner
+    // registered on Authentiqo, not when they actually acquired the device,
+    // so it's not a real date to measure a "resale" against.
     for (let i = 1; i < sortedEvents.length; i++) {
+      if (sortedEvents[i - 1].new_owner_number === 1) continue;
       const gap = daysBetween(sortedEvents[i - 1].transferred_at, sortedEvents[i].transferred_at);
       if (gap < 14) {
         ownershipRisks[i] = {
