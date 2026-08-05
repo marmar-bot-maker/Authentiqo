@@ -68,14 +68,16 @@ function detectRisks({ repairLogs = [], ownershipEvents = [], deviceCreatedAt })
   const verifiedEvents = ownershipEvents.filter((e) => e.source !== 'seller_declared');
   if (verifiedEvents.length >= 2) {
     const sortedEvents = [...verifiedEvents].sort((a, b) => new Date(a.transferred_at) - new Date(b.transferred_at));
+    // Owner #1's row is a registration, not a real "hand change" — don't count it.
+    const realTransferCount = sortedEvents.filter((e) => e.new_owner_number > 1).length;
     const ageYears = Math.max(daysBetween(deviceCreatedAt, new Date()) / 365, 0.5);
-    const transfersPerYear = sortedEvents.length / ageYears;
+    const transfersPerYear = realTransferCount / ageYears;
 
-    if (transfersPerYear >= 2) {
+    if (realTransferCount >= 2 && transfersPerYear >= 2) {
       const lastIdx = sortedEvents.length - 1;
       ownershipRisks[lastIdx] = {
         severity: transfersPerYear >= 3 ? 'high' : 'moderate',
-        title: `Changed hands ${sortedEvents.length} times in ${ageYears.toFixed(1)} years`,
+        title: `Changed hands ${realTransferCount} times in ${ageYears.toFixed(1)} years`,
         explanation: 'Frequent resale can be completely ordinary, but unusually rapid turnover is worth asking the seller about directly.',
       };
     }
