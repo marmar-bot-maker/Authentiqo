@@ -21,6 +21,12 @@ const repairShopProfileRoutes = require('./routes/repairShopProfile');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Render (and most hosts) sit behind a reverse proxy, so every request arrives
+// with an X-Forwarded-For header. Without this, express-rate-limit can't
+// safely tell which IP is the real client and throws on every request to a
+// rate-limited route.
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: false, // keep simple for the bundled static frontend; tighten if you add a CDN
 }));

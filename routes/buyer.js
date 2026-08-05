@@ -9,6 +9,7 @@ const router = express.Router();
 // manual serial-number search resolves to.
 router.get('/:serialNumber', async (req, res) => {
   const { serialNumber } = req.params;
+  console.log(`[device-lookup] request received for serial: "${serialNumber}"`);
 
   const { data: device } = await supabase
     .from('devices')
@@ -17,17 +18,25 @@ router.get('/:serialNumber', async (req, res) => {
     .maybeSingle();
 
   if (!device) {
+    console.log(`[device-lookup] no device row found for serial: "${serialNumber}"`);
     return res.status(404).json({ error: 'No device found for that serial number. Double-check the number and try again.' });
   }
 
   // Aggregate engagement metric only — no per-visitor identity is stored, just a count.
-  await supabase.from('devices').update({ passport_view_count: (device.passport_view_count || 0) + 1 }).eq('serial_number', serialNumber);
+  const { error: viewCountError } = await supabase.from('devices').update({ passport_view_count: (device.passport_view_count || 0) + 1 }).eq('serial_number', serialNumber);
+  if (viewCountError) console.error('[device-lookup] Could not increment passport_view_count (likely a missing migration):', viewCountError.message);
 
-  const { data: repairLogsRaw } = await supabase
+  const { data: repairLogsRaw, error: repairLogsError } = await supabase
     .from('repair_logs')
     .select('id, description, location, repair_date, verification_status, self_reported_by_seller_id, repair_companies(id, company_name)')
     .eq('serial_number', serialNumber)
     .order('repair_date', { ascending: true });
+
+  if (repairLogsError) {
+    console.error('[device-lookup] Could not load repair_logs (check that the latest schema.sql migration has been run):', repairLogsError.message);
+  } else {
+    console.log(`[device-lookup] repair_logs query for "${serialNumber}" returned ${(repairLogsRaw || []).length} row(s)`);
+  }
 
   const repairLogs = (repairLogsRaw || []).map((r) => ({
     id: r.id,
