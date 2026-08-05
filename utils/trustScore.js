@@ -170,6 +170,7 @@ function calculateTrustScore({ repairLogs = [], ownershipCount = 1, ownershipEve
     const sortedEvents = [...verifiedEvents].sort((a, b) => new Date(a.transferred_at) - new Date(b.transferred_at));
     let rapidFlips = 0;
     for (let i = 1; i < sortedEvents.length; i++) {
+      if (sortedEvents[i - 1].new_owner_number === 1) continue; // registration date, not a real prior-owner acquisition date
       const gap = daysBetween(sortedEvents[i - 1].transferred_at, sortedEvents[i].transferred_at);
       if (gap < 14) rapidFlips++;
     }
