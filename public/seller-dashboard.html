@@ -265,7 +265,7 @@ function renderCard(grid, device) {
         : `<div class="device-photo-placeholder">${icons.device}</div>`}
       <div class="device-card-face-main">
         <div class="device-card-name">${name}</div>
-        ${device.manufactured_date ? <div class="hint" style="margin-bottom:4px;">Manufactured ${formatDate(device.manufactured_date)}</div> : ''}
+        ${device.manufactured_date ? `<div class="hint" style="margin-bottom:4px;">Manufactured ${formatDate(device.manufactured_date)}</div>` : ''}
         <div class="device-card-meta">
           <span class="mono device-card-serial" data-reveal-serial="${device.serial_number}" title="Click to reveal full serial">•••• ${last4}</span>
           <span class="owner-badge">${ordinal(device.ownership_transfer_count)} Owner</span>
