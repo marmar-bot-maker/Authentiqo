@@ -284,7 +284,7 @@ async function loadDevice() {
 
     const events = [];
     data.repairHistory.forEach(r => events.push({ type: 'repair', date: r.repair_date, data: r }));
-    data.ownershipHistory.forEach(o => events.push({ type: 'ownership', date: o.transferred_at, data: o }));
+    data.ownershipHistory.filter(o => o.new_owner_number > 1).forEach(o => events.push({ type: 'ownership', date: o.transferred_at, data: o }));
     events.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (events.length === 0) {
