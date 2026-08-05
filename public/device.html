@@ -285,6 +285,7 @@ async function loadDevice() {
     const events = [];
     data.repairHistory.forEach(r => events.push({ type: 'repair', date: r.repair_date, data: r }));
     data.ownershipHistory.filter(o => o.new_owner_number > 1).forEach(o => events.push({ type: 'ownership', date: o.transferred_at, data: o }));
+    if (data.device.manufacturedDate) events.push({ type: 'manufactured', date: data.device.manufacturedDate, data: null });
     events.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (events.length === 0) {
@@ -294,7 +295,13 @@ async function loadDevice() {
         const item = document.createElement('div');
         item.className = 'timeline-item';
 
-        if (ev.type === 'repair') {
+        if (ev.type === 'manufactured') {
+  item.innerHTML = `
+    <span class="timeline-dot dot-structural"></span>
+    <div class="timeline-date mono">${formatDate(ev.date)}</div>
+    <div class="timeline-title">Manufactured</div>
+  `;
+} else if (ev.type === 'repair') {
           const r = ev.data;
           const verified = r.verification_status === 'verified';
           let ratingHtml = '';
