@@ -268,6 +268,7 @@ function renderCard(grid, device) {
         ${device.manufactured_date ? `<div class="hint" style="margin-bottom:4px;">Manufactured ${formatDate(device.manufactured_date)}</div>` : ''}
         <div class="device-card-meta">
           <span class="mono device-card-serial" data-reveal-serial="${device.serial_number}" title="Click to reveal full serial">•••• ${last4}</span>
+          ${device.device_type ? `<span class="owner-badge">${device.device_type}</span>` : ''}
           <span class="owner-badge">${ordinal(device.ownership_transfer_count)} Owner</span>
           ${wb.html}
         </div>
