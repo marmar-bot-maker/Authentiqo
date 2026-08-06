@@ -151,11 +151,11 @@ router.get('/:serialNumber/comparison', async (req, res) => {
     return res.status(404).json({ error: 'No device found for that serial number.' });
   }
 
-  const categoryFilter = device.device_type
-    ? supabase.from('devices').select('serial_number, ownership_transfer_count').eq('device_type', device.device_type)
-    : supabase.from('devices').select('serial_number, ownership_transfer_count');
-
-  const { data: peers } = await categoryFilter.limit(200);
+  const { data: peers } = await supabase
+    .from('devices')
+    .select('serial_number, ownership_transfer_count')
+    .neq('serial_number', serialNumber)
+    .limit(200);
   const peerList = peers || [];
 
   const { data: allRepairLogs } = await supabase
